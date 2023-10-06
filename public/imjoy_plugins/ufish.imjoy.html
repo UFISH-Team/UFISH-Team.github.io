@@ -1,0 +1,63 @@
+<config lang="json">
+{
+    "name": "ufish",
+    "type": "web-python",
+    "tags": [],
+    "flags": [],
+    "ui": "",
+    "version": "0.1.0",
+    "cover": "",
+    "description": "Run ufish in web browser",
+    "icon": "extension",
+    "inputs": null,
+    "outputs": null,
+    "api_version": "0.1.8",
+    "env": "",
+    "permissions": [],
+    "requirements": ["imageio", "skimage", "numpy", "pandas", "scipy"],
+    "dependencies": []
+}
+</config>
+
+<script lang="python">
+import pandas as pd
+import numpy as np
+from skimage.morphology import local_maxima
+from skimage.filters import laplace
+
+
+def call_spots_local_maxima(
+        enhanced_img: np.ndarray,
+        connectivity: int = 2,
+        intensity_threshold: float = 0.5,
+        laplace_process: bool = True,
+        ) -> pd.DataFrame:
+    """Call spots by finding the local maxima.
+
+    Args:
+        enhanced_img: The enhanced image.
+        connectivity: The connectivity for the local maxima.
+        intensity_threshold: The threshold for the intensity.
+
+    Returns:
+        A pandas dataframe containing the spots.
+    """
+    if laplace_process:
+        enhanced_img = laplace(enhanced_img)
+    mask = local_maxima(enhanced_img, connectivity=connectivity)
+    mask = mask & (enhanced_img > intensity_threshold)
+    peaks = np.array(np.where(mask)).T
+    df = pd.DataFrame(
+        peaks, columns=[f'axis-{i}' for i in range(mask.ndim)])
+    return df
+
+
+class Plugin():
+    async def setup(self):
+        api.log("ufish plugin setup")
+
+    async def run(self, ctx):
+        pass
+
+api.export(Plugin())
+</script>

@@ -5,9 +5,11 @@ export default {
   methods: {
     async loadImJoy() {
       const { imjoy } = useImJoyStore()
-      imjoy.api.log("Hello from Imjoy!")
-      const viewer = await imjoy.api.createWindow({src: "https://kaibu.org/#/app", name: "Kaibu"})
-      await viewer.add_image("https://raw.githubusercontent.com/imjoy-team/kaibu/master/public/static/img/kaibu-logo.gif?sanitize=true")
+      if (imjoy !== null) {
+        imjoy.api.log("Hello from Imjoy!")
+        const viewer = await imjoy.api.createWindow({src: "https://kaibu.org/#/app", name: "Kaibu"})
+        await viewer.add_image("https://raw.githubusercontent.com/imjoy-team/kaibu/master/public/static/img/kaibu-logo.gif?sanitize=true")
+      } 
     }
   }
 }

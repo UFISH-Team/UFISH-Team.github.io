@@ -30,7 +30,7 @@ imjoy.event_bus.on("add_window", (w: any) => {
       const container = document.createElement('div');
       container.id = w.window_id; // <--- this is important
       container.style.backgroundColor = '#ececec';
-      container.style.height = "300px";
+      container.style.height = "500px";
       container.style.width = "100%";
       // Here we simply add to the body
       // but in reality, you can embed it into your UI

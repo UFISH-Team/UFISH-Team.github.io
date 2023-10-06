@@ -19,7 +19,8 @@ import { RouterLink, RouterView } from 'vue-router'
 nav {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem 0;
+  align-items: left;
+  padding: 1rem;
+  background-color: #f5f5f5;
 }
 </style>
