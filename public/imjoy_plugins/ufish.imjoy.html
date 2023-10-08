@@ -24,6 +24,7 @@ import pandas as pd
 import numpy as np
 from skimage.morphology import local_maxima
 from skimage.filters import laplace
+from skimage.exposure import rescale_intensity
 
 
 def call_spots_local_maxima(
@@ -52,12 +53,129 @@ def call_spots_local_maxima(
     return df
 
 
+def scale_image(
+        img: np.ndarray,
+        big_quantile: float = 0.9999,
+        warning: bool = False,
+        ) -> np.ndarray:
+    """Scale an image to 0-255.
+    If the image has outlier values,
+    the image will be scaled to 0-big_value.
+
+    Args:
+        img: Image to scale.
+        big_quantile: Quantile to calculate the big value.
+        warning: Whether to print a warning message.
+    """
+    dtype = img.dtype
+    img = img.astype(np.float32)
+    if dtype is not np.uint8:
+        big_value = np.quantile(img, big_quantile)
+        if img_has_outlier(img, big_value):
+            if warning:
+                from .log import logger
+                logger.warning(
+                    'Image has outlier values. ')
+            in_range = (0, big_value)
+        else:
+            in_range = 'image'
+        img = rescale_intensity(
+            img,
+            in_range=in_range,
+            out_range=(0, 255),
+        )
+    return img
+
+
 class Plugin():
     async def setup(self):
         api.log("ufish plugin setup")
+        self.onnx_runner = await api.loadPlugin(
+            await api.getAttachment("ufish-onnx-runner"))
+
+    def load_image_from_bytes(self, file_name, img_bytes):
+        _file = io.BytesIO(img_bytes)
+        _file.name = file_name
+        if file_name.endswith(".tif") or file_name.endswith(".tiff"):
+            image = imageio.volread(_file)
+        if file_name.endswith(".npy"):
+            image = np.load(_file)
+            image = image.squeeze()
+        else:
+            image = imageio.imread(_file)
+        return image
+
+    def save_image_to_bytes(self, image):
+        _file = io.BytesIO()
+        if image.ndim == 2:
+            imageio.imwrite(_file, image, format="tiff")
+        else:
+            imageio.volwrite(_file, image, format="tiff")
+        return _file.getvalue()
+
+    async def predict_2d(self, image):
+        image = scale_image(image)
+        enh_img = await self.onnx_runner.infer_2d(image)
+        df = call_spots_local_maxima(enh_img)
+        coords = df.values
+        return enh_img, coords
 
     async def run(self, ctx):
         pass
 
 api.export(Plugin())
 </script>
+
+<attachment name="ufish-onnx-runner">
+<config lang="json">
+{
+    "name": "ufish-onnx-runner",
+    "type": "web-worker",
+    "tags": [],
+    "flags": [],
+    "ui": "",
+    "version": "0.1.0",
+    "cover": "",
+    "description": "Run ufish onnx model in web browser",
+    "icon": "extension",
+    "inputs": null,
+    "outputs": null,
+    "api_version": "0.1.8",
+    "env": "",
+    "permissions": [],
+    "requirements": [
+        "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js",
+        "https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js",
+    ],
+    "dependencies": []
+}
+</config>
+
+<script lang="javascript">
+class Plugin {
+    async setup() {
+        api.log("ufish-onnx-runner plugin setup")
+        this.session = await ort.InferenceSession.create("/public/model/v1.0-alldata-ufish_c32.onnx")
+    }
+
+    async infer_2d(image) {
+        console.log(image)
+        if (image.shape.length != 2) {
+            throw new Error("image must be 2d")
+        }
+        const shape = image.shape
+        const flatShape = [shape[0] * shape[1]]
+        const flatten = image.reshape(flatShape)
+        const input = new ort.Tensor(
+            new Float32Array(flatten.tolist()), [1, 1].concat(image.shape))
+        const output = await this.session.run({input})
+        const out_image = nj.array(output.data).reshape(shape)
+        return out_image
+    }
+
+    async run() {}
+}
+
+api.export(new Plugin());
+</script>
+</attachment>
