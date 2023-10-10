@@ -30,6 +30,12 @@ export default {
     </v-app-bar>
 
     <v-navigation-drawer v-model="drawer" temporary>
+      <v-list nav>
+        <v-list-item prepend-icon="mdi-home" title="Home" value="home"></v-list-item>
+        <v-list-item prepend-icon="mdi-database" title="Dataset" value="dataset"></v-list-item>
+        <v-list-item prepend-icon="mdi-play-circle-outline" title="Predict" value="predict"></v-list-item>
+        <v-list-item prepend-icon="mdi-information-outline" title="About" value="about"></v-list-item>
+      </v-list>
     </v-navigation-drawer>
 
     <v-main>
