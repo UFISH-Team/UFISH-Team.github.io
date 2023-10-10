@@ -3,8 +3,6 @@
     <div class="info-text">
       U-FISH is a deep learning method for FISH spot ✨ detection.
     </div>
-    <div class="info-text-2">
-    </div>
     <div class="card-container">
       <InfoCard
         img="/images/dataset2.jpg"
@@ -14,6 +12,9 @@
         img="/images/run_in_browser2.jpg"
         title="Predict"
         subtitle="Run U-FISH model in brwoser" />
+    </div>
+    <div class="info-text">
+      Try it now! 🔥
     </div>
   </div>
 </template>
@@ -43,7 +44,8 @@ export default {
 .info-text {
   font-size: 1.5em;
   text-align: center;
-  margin: 2em;
+  margin: 1em;
+  margin-top: 0;
 }
 .card-container {
   justify-content: center;
@@ -51,6 +53,7 @@ export default {
   gap: 2em;
   flex-wrap: wrap;
   margin: 5em;
-  margin-top: 2em;
+  margin-top: 1em;
+  margin-bottom: 3em;
 }
 </style>

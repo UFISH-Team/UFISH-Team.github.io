@@ -1,10 +1,18 @@
 <script lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 
 export default {
   data: () => ({
     drawer: false,
   }),
+  methods: {
+    gotoPage(page: string) {
+      this.$router.push({ name: page })
+    }
+  },
+  components: {
+    RouterView
+  }
 }
 </script>
 
@@ -31,19 +39,41 @@ export default {
 
     <v-navigation-drawer v-model="drawer" temporary>
       <v-list nav>
-        <v-list-item prepend-icon="mdi-home" title="Home" value="home"></v-list-item>
-        <v-list-item prepend-icon="mdi-database" title="Dataset" value="dataset"></v-list-item>
-        <v-list-item prepend-icon="mdi-play-circle-outline" title="Predict" value="predict"></v-list-item>
-        <v-list-item prepend-icon="mdi-information-outline" title="About" value="about"></v-list-item>
+        <v-list-item prepend-icon="mdi-home"
+          @click="()=>{gotoPage('home')}"
+          title="Home" value="home"></v-list-item>
+        <v-list-item prepend-icon="mdi-database"
+          @click="()=>{gotoPage('dataset')}"
+          title="Dataset" value="dataset"></v-list-item>
+        <v-list-item prepend-icon="mdi-play-circle-outline"
+          @click="()=>{gotoPage('predict')}"
+          title="Predict" value="predict"></v-list-item>
+        <v-list-item prepend-icon="mdi-information-outline"
+          @click="()=>{gotoPage('about')}"
+          title="About" value="about"></v-list-item>
       </v-list>
     </v-navigation-drawer>
 
     <v-main>
-      <RouterView />
+      <div class="container">
+        <RouterView />
+        <div class="footer">2023 U-FISH Team</div>
+      </div>
     </v-main>
   </v-app>
 
 </template>
 
 <style scoped>
+.container {
+  margin-top: 1em;
+  display: grid;
+  place-items: center;
+}
+.footer {
+  position: absolute;
+  bottom: 1em;
+  font-size: 0.8em;
+  color: #888;
+}
 </style>
