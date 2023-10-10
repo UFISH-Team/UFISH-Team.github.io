@@ -7,11 +7,13 @@
       <InfoCard
         img="/images/dataset2.jpg"
         title="Dataset"
-        subtitle="U-FISH dataset for train and test" />
+        subtitle="U-FISH dataset for train and test"
+        :click-action="()=>{gotoPage('dataset')}" />
       <InfoCard
         img="/images/run_in_browser2.jpg"
         title="Predict"
-        subtitle="Run U-FISH model in brwoser" />
+        subtitle="Run U-FISH model in brwoser"
+        :click-action="()=>{gotoPage('predict')}" />
     </div>
     <div class="info-text">
       Try it now! 🔥
@@ -32,7 +34,11 @@ export default {
         const viewer = await imjoy.api.createWindow({src: "https://kaibu.org/#/app", name: "Kaibu"})
         await viewer.add_image("https://raw.githubusercontent.com/imjoy-team/kaibu/master/public/static/img/kaibu-logo.gif?sanitize=true")
       } 
+    },
+    gotoPage(page: string) {
+      this.$router.push({ name: page })
     }
+
   },
   components: {
     InfoCard

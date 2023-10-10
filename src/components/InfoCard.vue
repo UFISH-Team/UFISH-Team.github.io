@@ -10,7 +10,9 @@
       <v-card-subtitle> {{ subtitle }} </v-card-subtitle>
 
       <v-card-actions>
-        <v-btn color="blue" variant="text"> Explore </v-btn>
+        <v-btn
+          @click="clickAction"
+          color="blue" variant="text"> Explore </v-btn>
       </v-card-actions>
     </v-card>
 </template>
@@ -20,7 +22,8 @@ export default {
   props: {
     img: String,
     title: String,
-    subtitle: String
-  }
+    subtitle: String,
+    clickAction: Function,
+  },
 }
 </script>
