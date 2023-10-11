@@ -10,12 +10,3 @@ export const useImJoyStore = defineStore('imjoy', () => {
 
   return { imjoy, setInstance }
 })
-
-export const useKaibuViewer = defineStore('kaibu-viewer', () => {
-  const viewer: Ref<any> = ref(null)
-  const setViewer = (ins: any) => {
-    viewer.value = ins
-  }
-
-  return { viewer, setViewer }
-})

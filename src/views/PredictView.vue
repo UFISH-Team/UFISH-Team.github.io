@@ -20,41 +20,36 @@
 </template>
 
 <script lang="ts">
-import {
-  useImJoyStore,
-  useKaibuViewer,
-} from '@/stores/imjoy';
+import { useImJoyStore } from '@/stores/imjoy';
 
 export default {
   data: () => ({
     overlay: false,
+    plugin: null,
   }),
   created() {
-    this.loadKaibu()
+    this.loadPlugin()
   },
   methods: {
-    async loadKaibu() {
+    async loadPlugin() {
       const { imjoy } = useImJoyStore()
       this.overlay = true
       if (imjoy !== null) {
         imjoy.api.log("Hello from Imjoy!")
-        const viewer = await imjoy.api.createWindow({
-          src: "https://kaibu.org/#/app", name: "Kaibu",
-          window_id: "kaibu-container"
+        const url = window.location.origin + "/plugins/ufish.imjoy.html"
+        this.plugin = await imjoy.api.loadPlugin({
+          src: url,
         })
-        const { setViewer } = useKaibuViewer()
-        setViewer(viewer)
         this.overlay = false
       } else {
-        setTimeout(this.loadKaibu, 1000)
+        setTimeout(this.loadPlugin, 1000)
       }
     },
 
     async loadExample() {
-      const { viewer } = useKaibuViewer()
       this.overlay = true
-      if (viewer !== null) {
-        await viewer.add_image("https://raw.githubusercontent.com/imjoy-team/kaibu/master/public/static/img/kaibu-logo.gif?sanitize=true")
+      if (this.plugin !== null) {
+        await (this.plugin as any)?.add_image("https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif")
         this.overlay = false
       } else {
         setTimeout(this.loadExample, 1000)

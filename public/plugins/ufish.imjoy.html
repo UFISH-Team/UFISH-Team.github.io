@@ -14,7 +14,7 @@
     "api_version": "0.1.8",
     "env": "",
     "permissions": [],
-    "requirements": ["imageio", "skimage", "numpy", "pandas", "scipy"],
+    "requirements": ["imageio", "scikit-image", "numpy", "pandas", "scipy"],
     "dependencies": []
 }
 </config>
@@ -25,6 +25,7 @@ import numpy as np
 from skimage.morphology import local_maxima
 from skimage.filters import laplace
 from skimage.exposure import rescale_intensity
+from imjoy import api
 
 
 def call_spots_local_maxima(
@@ -90,6 +91,10 @@ def scale_image(
 class Plugin():
     async def setup(self):
         api.log("ufish plugin setup")
+        self.viewer = await api.createWindow(
+            src="https://kaibu.org/#/app",
+            window_id="kaibu-container"
+        )
         self.onnx_runner = await api.loadPlugin(
             await api.getAttachment("ufish-onnx-runner"))
 
