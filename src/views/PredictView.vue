@@ -25,7 +25,10 @@ import { useImJoyStore } from '@/stores/imjoy';
 export default {
   data: () => ({
     overlay: false,
-    plugin: null,
+    plugin: null as any,
+    modelLoaded: false,
+    model_url: window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx",
+    test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
   }),
   created() {
     this.loadPlugin()
@@ -37,9 +40,7 @@ export default {
       if (imjoy !== null) {
         imjoy.api.log("Hello from Imjoy!")
         const url = window.location.origin + "/plugins/ufish.imjoy.html"
-        this.plugin = await imjoy.api.loadPlugin({
-          src: url,
-        })
+        this.plugin = await imjoy.api.loadPlugin({ src: url, })
         this.overlay = false
       } else {
         setTimeout(this.loadPlugin, 1000)
@@ -49,7 +50,10 @@ export default {
     async loadExample() {
       this.overlay = true
       if (this.plugin !== null) {
-        await (this.plugin as any)?.add_image("https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif")
+        const res = await fetch(this.test_data_url)
+        const data = await res.arrayBuffer()
+        const fileName = this.test_data_url.split('/').pop()
+        await this.plugin.view_img_from_bytes(fileName, data)
         this.overlay = false
       } else {
         setTimeout(this.loadExample, 1000)
@@ -76,7 +80,7 @@ export default {
 }
 #kaibu-container {
   width: 100%;
-  height: 600px;
+  height: 720px;
   border: 1px solid #ccc;
   overflow: auto;
   resize: both;
