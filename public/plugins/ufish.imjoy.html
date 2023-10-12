@@ -127,7 +127,7 @@ class Plugin():
 
     async def view_img_from_bytes(self, file_name, bytes_):
         image = self.load_image_from_bytes(file_name, bytes_)
-        await self.viewer.view_image(image)
+        await self.viewer.view_image(image, name=file_name)
 
     async def run(self, ctx):
         pass

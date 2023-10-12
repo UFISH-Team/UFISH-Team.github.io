@@ -2,7 +2,7 @@
   <h1>Run U-FISH in browser</h1>
   <v-card class="pred-container">
     <div class="buttons">
-      <v-btn>Load image</v-btn>
+      <v-btn @click="loadLocalImage">Load image</v-btn>
       <v-btn @click="loadExample">Example image</v-btn>
       <v-btn>Run</v-btn>
       <v-btn>Download</v-btn>
@@ -58,7 +58,31 @@ export default {
       } else {
         setTimeout(this.loadExample, 1000)
       }
-    }
+    },
+
+    async loadLocalImage() {
+      const fileInput = document.createElement('input')
+      fileInput.type = 'file'
+      fileInput.accept = 'image/*'
+      fileInput.style.display = 'none'
+      fileInput.onchange = async () => {
+        if (
+          fileInput.files === null ||
+          fileInput.files.length === 0
+          ) {
+            return
+          }
+        const file = fileInput.files[0]
+        const reader = new FileReader()
+        reader.onload = async () => {
+          const data = reader.result
+          const fileName = file.name
+          await this.plugin.view_img_from_bytes(fileName, data)
+        }
+        reader.readAsArrayBuffer(file)
+      }
+      fileInput.click()
+    },
 
   }
 }
