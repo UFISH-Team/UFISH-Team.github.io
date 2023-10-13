@@ -160,6 +160,10 @@ class Plugin():
 
     async def process_enhanced(self, enh_img):
         await self.viewer.view_image(enh_img, name="enhanced")
+        df = call_spots_local_maxima(enh_img)
+        coords = df.values
+        await self.viewer.add_points(
+            np.flip(coords, axis=1), name="spots")
 
     async def scale_image(self):
         image = scale_image(self.image)

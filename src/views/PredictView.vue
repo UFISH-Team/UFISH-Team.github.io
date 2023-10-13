@@ -27,13 +27,13 @@ export default {
   data: () => ({
     loadingData: false,
     hasData: false,
-    hasOutput: false,
     running: false,
     plugin: null as any,
     modelLoaded: false,
     modelUrl: window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx",
     ortSession: null as ort.InferenceSession | null,
     test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
+    output: null as any,
   }),
   computed: {
     overlay() {
@@ -43,6 +43,9 @@ export default {
         (this.loadingData) ||
         (this.running)
       )
+    },
+    hasOutput() {
+      return this.output !== null
     }
   },
   created() {
@@ -62,6 +65,8 @@ export default {
     },
 
     async loadOrtSession() {
+      ort.env.wasm.numThreads = 4
+      ort.env.wasm.simd = true
       const session = await ort.InferenceSession.create(
         this.modelUrl,
         { executionProviders: ['wasm'] })
@@ -149,7 +154,7 @@ export default {
         _rshape: output.dims,
         _rvalue: (output.data as Float32Array).buffer
       }
-      await this.plugin.view_img(outImg, 'enhanced')
+      await this.plugin.process_enhanced(outImg)
       this.running = false
     }
 
