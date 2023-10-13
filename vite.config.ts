@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     vue(),
     vuetify({
-      autoImport: true,
+      autoImport: true
     }),
   ],
   resolve: {
@@ -17,4 +17,6 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  define: {
+  }
 })

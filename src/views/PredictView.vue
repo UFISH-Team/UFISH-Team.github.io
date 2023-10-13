@@ -31,8 +31,9 @@
 </template>
 
 <script lang="ts">
-import { useImJoyStore } from '@/stores/imjoy';
 import * as ort from 'onnxruntime-web';
+
+declare var imjoy: any;
 
 function downloadBlob(
     content: any, filename: string, contentType: string
@@ -95,7 +96,6 @@ export default {
   },
   methods: {
     async loadPlugin() {
-      const { imjoy } = useImJoyStore()
       if (imjoy !== null) {
         imjoy.api.log("Hello from Imjoy!")
         const url = window.location.origin + "/plugins/ufish.imjoy.html"

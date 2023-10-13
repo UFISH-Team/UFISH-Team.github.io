@@ -12,9 +12,6 @@ import * as directives from 'vuetify/directives'
 import App from './App.vue'
 import router from './router'
 
-import * as imJoyCore from 'imjoy-core'
-import { useImJoyStore } from './stores/imjoy'
-
 const app = createApp(App)
 
 app.use(createPinia())
@@ -28,12 +25,3 @@ app.use(vuetify)
 
 app.mount('#app')
 
-const imjoy = new imJoyCore.ImJoy({
-  imjoy_api: {}
-})
-
-imjoy.start({workspace: 'default'}).then(async ()=>{
-    console.log('ImJoy started');
-    const imjoyStore = useImJoyStore()
-    imjoyStore.setInstance(imjoy)
-})
