@@ -155,6 +155,12 @@ class Plugin():
         image = self.load_image_from_bytes(file_name, bytes_)
         await self.viewer.view_image(image, name=file_name)
 
+    async def view_img(self, image, name="image"):
+        await self.viewer.view_image(image, name=name)
+
+    async def process_enhanced(self, enh_img):
+        await self.viewer.view_image(enh_img, name="enhanced")
+
     async def scale_image(self):
         image = scale_image(self.image)
         return image

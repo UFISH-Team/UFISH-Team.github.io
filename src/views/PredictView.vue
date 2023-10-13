@@ -5,7 +5,7 @@
       <v-btn @click="loadLocalImage">Load image</v-btn>
       <v-btn @click="loadExample">Example image</v-btn>
       <v-btn @click="run" :disabled="!hasData">Run</v-btn>
-      <v-btn :disabled="hasOutput">Download</v-btn>
+      <v-btn :disabled="!hasOutput">Download</v-btn>
     </div>
     <div id="kaibu-container"></div>
 
@@ -23,8 +23,6 @@
 import { useImJoyStore } from '@/stores/imjoy';
 import * as ort from 'onnxruntime-web';
 
-declare const nj: any;
-
 export default {
   data: () => ({
     loadingData: false,
@@ -34,7 +32,7 @@ export default {
     plugin: null as any,
     modelLoaded: false,
     modelUrl: window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx",
-    ortSession: null as any,
+    ortSession: null as ort.InferenceSession | null,
     test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
   }),
   computed: {
@@ -74,6 +72,10 @@ export default {
       this.loadingData = true
       if (this.plugin !== null) {
         const res = await fetch(this.test_data_url)
+        if (!res.ok) {
+          this.loadingData = false
+          return
+        }
         const data = await res.arrayBuffer()
         const fileName = this.test_data_url.split('/').pop()
         await this.plugin.view_img_from_bytes(fileName, data)
@@ -112,29 +114,43 @@ export default {
     },
 
     async scaleImage() {
-      const image = await this.plugin.scale_image_to_bytes()
+      const image = await this.plugin.scale_image()
       return image
     },
 
-    async infer_2d(image: any) {
-        console.log(image)
-        if (image.shape.length != 2) {
-            throw new Error("image must be 2d")
+    async infer_2d(input: ort.Tensor) {
+        if (input.type !== 'float32') {
+          throw new Error('Input tensor must be of type float32')
         }
-        const shape = image.shape
-        const flatShape = [shape[0] * shape[1]]
-        const flatten = image.reshape(flatShape)
-        const input = new ort.Tensor(
-            new Float32Array(flatten.tolist()), [1, 1].concat(image.shape))
+        if (input.dims.length !== 2) {
+          throw new Error('Input tensor must be 2D')
+        }
+        const input4d = input.reshape([1, 1, input.dims[0], input.dims[1]])
         const session = this.ortSession
-        const output = await session.run({input})
-        const out_image = nj.array(output.data).reshape(shape)
-        return out_image
+        if (session === null) {
+          throw new Error('ONNX session not loaded')
+        }
+        const feeds = {'input': input4d}
+        const { output } = await session.run(feeds)
+        const out = output.reshape([output.dims[2], output.dims[3]])
+        return out
     },
 
     async run() {
-      const scaledImage = await this.scaleImage()
-      debugger
+      this.running = true
+      const sImg = await this.scaleImage()
+      const f32data = new Float32Array(sImg._rvalue)
+      const input = new ort.Tensor(
+        sImg._rdtype, f32data, sImg._rshape);
+      const output = await this.infer_2d(input)
+      const outImg = {
+        _rtype: "ndarray",
+        _rdtype: output.type,
+        _rshape: output.dims,
+        _rvalue: (output.data as Float32Array).buffer
+      }
+      await this.plugin.view_img(outImg, 'enhanced')
+      this.running = false
     }
 
   }
