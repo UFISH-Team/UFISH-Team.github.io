@@ -14,7 +14,7 @@
     "api_version": "0.1.8",
     "env": "",
     "permissions": [],
-    "requirements": ["imageio", "scikit-image", "numpy", "pandas"],
+    "requirements": ["tifffile", "imageio", "scikit-image", "numpy", "pandas"],
     "dependencies": []
 }
 </config>
@@ -54,6 +54,27 @@ def call_spots_local_maxima(
     df = pd.DataFrame(
         peaks, columns=[f'axis-{i}' for i in range(mask.ndim)])
     return df
+
+
+def img_has_outlier(
+        img: np.ndarray,
+        big_value: float,
+        ) -> bool:
+    """Check if an image has outlier values.
+    If the difference between the maximum value
+    and the big value is greater than the big value,
+    then the image has outlier values.
+
+    Args:
+        img: Image to check.
+        big_value: Value to compare with the maximum value.
+    """
+    max_value = np.max(img)
+    diff = max_value - big_value
+    if diff > big_value:
+        return True
+    else:
+        return False
 
 
 def scale_image(
@@ -97,17 +118,22 @@ class Plugin():
             src="https://kaibu.org/#/app",
             window_id="kaibu-container"
         )
+        self.image = None
 
     def load_image_from_bytes(self, file_name, img_bytes):
         _file = io.BytesIO(img_bytes)
         _file.name = file_name
         if file_name.endswith(".tif") or file_name.endswith(".tiff"):
-            image = imageio.volread(_file)
+            try:
+                image = imageio.imread(_file)
+            except Exception as e:
+                image = imageio.volread(_file)
         if file_name.endswith(".npy"):
             image = np.load(_file)
             image = image.squeeze()
         else:
             image = imageio.imread(_file)
+        self.image = image
         return image
 
     def save_image_to_bytes(self, image):
@@ -128,6 +154,10 @@ class Plugin():
     async def view_img_from_bytes(self, file_name, bytes_):
         image = self.load_image_from_bytes(file_name, bytes_)
         await self.viewer.view_image(image, name=file_name)
+
+    async def scale_image(self):
+        image = scale_image(self.image)
+        return image
 
     async def run(self, ctx):
         pass

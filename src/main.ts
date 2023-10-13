@@ -37,4 +37,3 @@ imjoy.start({workspace: 'default'}).then(async ()=>{
     const imjoyStore = useImJoyStore()
     imjoyStore.setInstance(imjoy)
 })
-
