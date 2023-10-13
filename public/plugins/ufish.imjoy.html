@@ -24,6 +24,7 @@ import io
 import imageio
 import pandas as pd
 import numpy as np
+import tifffile
 from skimage.morphology import local_maxima
 from skimage.filters import laplace
 from skimage.exposure import rescale_intensity
@@ -138,10 +139,8 @@ class Plugin():
 
     def save_image_to_bytes(self, image):
         _file = io.BytesIO()
-        if image.ndim == 2:
-            imageio.imwrite(_file, image, format="tiff")
-        else:
-            imageio.volwrite(_file, image, format="tiff")
+        with tifffile.TiffWriter(_file) as tif:
+            tif.save(image)
         return _file.getvalue()
 
     async def predict_2d(self, image):
@@ -164,6 +163,11 @@ class Plugin():
         coords = df.values
         await self.viewer.add_points(
             np.flip(coords, axis=1), name="spots")
+        enh_bytes = self.save_image_to_bytes(enh_img)
+        fake_csv_file = io.StringIO()
+        coords_csv = df.to_csv(fake_csv_file, index=False)
+        csv_bytes = fake_csv_file.getvalue().encode()
+        return enh_bytes, csv_bytes
 
     async def scale_image(self):
         image = scale_image(self.image)

@@ -5,7 +5,7 @@
       <v-btn @click="loadLocalImage">Load image</v-btn>
       <v-btn @click="loadExample">Example image</v-btn>
       <v-btn @click="run" :disabled="!hasData">Run</v-btn>
-      <v-btn :disabled="!hasOutput">Download</v-btn>
+      <v-btn @click="download" :disabled="!hasOutput">Download</v-btn>
     </div>
     <div id="kaibu-container"></div>
 
@@ -22,6 +22,21 @@
 <script lang="ts">
 import { useImJoyStore } from '@/stores/imjoy';
 import * as ort from 'onnxruntime-web';
+
+function downloadBlob(
+    content: any, filename: string, contentType: string
+  ) {
+  // Create a blob
+  var blob = new Blob([content], { type: contentType });
+  var url = URL.createObjectURL(blob);
+
+  // Create a link to download it
+  var pom = document.createElement('a');
+  pom.href = url;
+  pom.setAttribute('download', filename);
+  pom.click();
+}
+
 
 export default {
   data: () => ({
@@ -154,8 +169,17 @@ export default {
         _rshape: output.dims,
         _rvalue: (output.data as Float32Array).buffer
       }
-      await this.plugin.process_enhanced(outImg)
+      const [enhBytes, coords] = await this.plugin.process_enhanced(outImg)
+      this.output = {
+        enhanced: enhBytes,
+        coords: coords
+      }
       this.running = false
+    },
+
+    async download() {
+      downloadBlob(this.output.enhanced, "enhanced.tif", "image/tiff")
+      downloadBlob(this.output.coords, "coords.csv", "text/csv;charset=utf-8;")
     }
 
   }
