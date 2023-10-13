@@ -153,6 +153,7 @@ class Plugin():
     async def view_img_from_bytes(self, file_name, bytes_):
         image = self.load_image_from_bytes(file_name, bytes_)
         await self.viewer.view_image(image, name=file_name)
+        return image.shape
 
     async def view_img(self, image, name="image"):
         await self.viewer.view_image(image, name=name)
@@ -167,7 +168,8 @@ class Plugin():
         fake_csv_file = io.StringIO()
         coords_csv = df.to_csv(fake_csv_file, index=False)
         csv_bytes = fake_csv_file.getvalue().encode()
-        return enh_bytes, csv_bytes
+        num_spots = df.shape[0]
+        return enh_bytes, csv_bytes, num_spots
 
     async def scale_image(self):
         image = scale_image(self.image)

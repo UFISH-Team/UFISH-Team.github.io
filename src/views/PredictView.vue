@@ -1,5 +1,16 @@
 <template>
   <h1>Run U-FISH in browser</h1>
+  <div class="info-panel">
+    <p>
+      Hello, this is a demo of U-FISH running in the browser.
+    </p>
+    <p>
+      It's only support 2D images for now.
+      If you want to run on more complex images,
+      please use the <a href="https://github.com/UFISH-Team/U-FISH">local version</a>.
+    </p>
+  </div>
+  <div class="info-panel" id="run-info" v-text="runInfoText" ></div>
   <v-card class="pred-container">
     <div class="buttons">
       <v-btn @click="loadLocalImage">Load image</v-btn>
@@ -42,6 +53,7 @@ export default {
   data: () => ({
     loadingData: false,
     hasData: false,
+    hasError: false,
     running: false,
     plugin: null as any,
     modelLoaded: false,
@@ -49,6 +61,7 @@ export default {
     ortSession: null as ort.InferenceSession | null,
     test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
     output: null as any,
+    runInfoText: "loading...",
   }),
   computed: {
     overlay() {
@@ -64,8 +77,21 @@ export default {
     }
   },
   created() {
-    this.loadPlugin()
-    this.loadOrtSession()
+    const loadPluginPromise = this.loadPlugin()
+    loadPluginPromise.then(() => {
+      this.runInfoText = "Plugin loaded"
+    })
+    loadPluginPromise.catch((e) => {
+      this.runInfoText = "Failed to load plugin, see console for more detail."
+      console.log(e)
+      this.hasError = true
+    })
+    const loadSessionPromise = this.loadOrtSession()
+    loadSessionPromise.catch((e) => {
+      this.runInfoText = "Failed to load ONNX session, see console for more detail."
+      console.log(e)
+      this.hasError = true
+    })
   },
   methods: {
     async loadPlugin() {
@@ -98,7 +124,8 @@ export default {
         }
         const data = await res.arrayBuffer()
         const fileName = this.test_data_url.split('/').pop()
-        await this.plugin.view_img_from_bytes(fileName, data)
+        const shape = await this.plugin.view_img_from_bytes(fileName, data)
+        this.runInfoText = `Image loaded, shape: ${shape}`
         this.loadingData = false
         this.hasData = true
       } else {
@@ -124,7 +151,8 @@ export default {
           const data = reader.result
           const fileName = file.name
           this.loadingData = true
-          await this.plugin.view_img_from_bytes(fileName, data)
+          const shape = await this.plugin.view_img_from_bytes(fileName, data)
+          this.runInfoText = `Image loaded, shape: ${shape}`
           this.loadingData = false
           this.hasData = true
         }
@@ -169,11 +197,12 @@ export default {
         _rshape: output.dims,
         _rvalue: (output.data as Float32Array).buffer
       }
-      const [enhBytes, coords] = await this.plugin.process_enhanced(outImg)
+      const [enhBytes, coords, numSpots] = await this.plugin.process_enhanced(outImg)
       this.output = {
         enhanced: enhBytes,
         coords: coords
       }
+      this.runInfoText = `Done, ${numSpots} spots detected.`
       this.running = false
     },
 
@@ -193,6 +222,14 @@ export default {
 .left-align-item {
   align-self: start;
   justify-content: start;
+}
+.info-panel {
+  text-align: center;
+  color: #888;
+}
+#run-info {
+  margin-top: 1em;
+  color: v-bind("hasError ? '#f00' : '#888'")
 }
 .buttons {
   display: flex;
