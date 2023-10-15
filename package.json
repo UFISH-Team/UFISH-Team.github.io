@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@mdi/font": "^7.3.67",
+    "@types/plotly.js": "^2.12.27",
     "@types/vue-router": "^2.0.0",
+    "jquery-csv": "^1.0.21",
     "onnxruntime-web": "^1.16.1",
     "pinia": "^2.1.6",
+    "plotly.js-dist": "^2.26.2",
     "vite-plugin-vuetify": "^1.0.2",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5",

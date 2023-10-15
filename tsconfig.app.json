@@ -6,7 +6,10 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "plotly.js-dist": [
+        "node_modules/@types/plotly.js/index.d.ts"
+      ]
     }
   }
 }

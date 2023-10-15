@@ -1,3 +1,4 @@
 /// <reference types="vite/client" />
 
-declare module 'imjoy-core';
+declare module 'jquery-csv';
+
