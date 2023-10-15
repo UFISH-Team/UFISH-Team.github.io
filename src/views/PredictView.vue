@@ -120,6 +120,8 @@ export default {
         const res = await fetch(this.test_data_url)
         if (!res.ok) {
           this.loadingData = false
+          this.runInfoText = `Failed to load example image, status: ${res.status}`
+          this.hasError = true
           return
         }
         const data = await res.arrayBuffer()
@@ -128,6 +130,7 @@ export default {
         this.runInfoText = `Image loaded, shape: ${shape}`
         this.loadingData = false
         this.hasData = true
+        this.hasError = false
       } else {
         setTimeout(this.loadExample, 1000)
       }
@@ -152,7 +155,13 @@ export default {
           const fileName = file.name
           this.loadingData = true
           const shape = await this.plugin.view_img_from_bytes(fileName, data)
-          this.runInfoText = `Image loaded, shape: ${shape}`
+          if (shape.length !== 2) {
+            this.runInfoText = `Image loaded, shape: ${shape}, but it's not 2D, please try another image.`
+            this.hasError = true
+          } else {
+            this.runInfoText = `Image loaded, shape: ${shape}`
+            this.hasError = false
+          }
           this.loadingData = false
           this.hasData = true
         }
@@ -190,20 +199,29 @@ export default {
       const f32data = new Float32Array(sImg._rvalue)
       const input = new ort.Tensor(
         sImg._rdtype, f32data, sImg._rshape);
-      const output = await this.infer_2d(input)
-      const outImg = {
-        _rtype: "ndarray",
-        _rdtype: output.type,
-        _rshape: output.dims,
-        _rvalue: (output.data as Float32Array).buffer
+      let output;
+      try {
+        output = await this.infer_2d(input)
+        const outImg = {
+          _rtype: "ndarray",
+          _rdtype: output.type,
+          _rshape: output.dims,
+          _rvalue: (output.data as Float32Array).buffer
+        }
+        const [enhBytes, coords, numSpots] = await this.plugin.process_enhanced(outImg)
+        this.output = {
+          enhanced: enhBytes,
+          coords: coords
+        }
+        this.runInfoText = `Done, ${numSpots} spots detected.`
+        this.running = false
+      } catch (error) {
+        console.log(error)
+        this.runInfoText = "Failed to run inference, see console for more detail."
+        this.running = false
+        this.hasError = true
+        return
       }
-      const [enhBytes, coords, numSpots] = await this.plugin.process_enhanced(outImg)
-      this.output = {
-        enhanced: enhBytes,
-        coords: coords
-      }
-      this.runInfoText = `Done, ${numSpots} spots detected.`
-      this.running = false
     },
 
     async download() {
@@ -217,7 +235,7 @@ export default {
 
 <style scoped>
 .pred-container {
-  width: 90%;
+  width: 80%;
 }
 .left-align-item {
   align-self: start;

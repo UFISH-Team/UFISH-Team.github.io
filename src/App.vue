@@ -28,7 +28,7 @@ export default {
 
       <template v-slot:append>
         <v-btn icon>
-          <a href="https://github.com/UFISH-Team/U-FISH">
+          <a href="https://github.com/UFISH-Team/">
             <v-icon color="white">mdi-github</v-icon>
           </a>
         </v-btn>
@@ -57,6 +57,7 @@ export default {
     <v-main>
       <div class="container">
         <RouterView />
+        <div style="margin-top: 1em; height: 2em;"></div>
         <div class="footer">2023 U-FISH Team</div>
       </div>
     </v-main>
