@@ -80,10 +80,9 @@ export default {
 
     async loadViewer() {
       if (imjoy !== null) {
-        const viewer = await imjoy.api.createWindow(
-          { src: "https://kaibu.org/#/app", window_id: "kaibu-container" })
+        const pluginUrl = window.location.origin + "/plugins/viewer.imjoy.html"
+        const viewer = await imjoy.api.loadPlugin({ src: pluginUrl })
         this.viewer = viewer
-        await viewer.set_mode("full")
       } else {
         setTimeout(() => this.loadViewer(), 1000)
       }
@@ -96,14 +95,15 @@ export default {
         const point = data.points[0];
         const imgName = point.text.split("<br>")[0].split(":</b> ")[1]
         console.log(`You clicked on point: ${imgName} at position (x: ${point.x}, y: ${point.y})`)
-        //const imgURL = this.imgBaseURL + imgName
-        //await this.viewer.view_image(imgURL, { name: imgName, type: 'itk-vtk' })
+        const imgURL = this.imgBaseURL + imgName
+        const imgBytes = await fetch(imgURL).then(resp => resp.arrayBuffer())
+        await this.viewer.view_img_from_bytes(imgName, imgBytes)
         const csvName = imgName.replace(".tif", ".csv")
         const csvURL = this.csvBaseURL + csvName
         const csvContent = await fetch(csvURL).then(resp => resp.text())
         const csvData = csv.toObjects(csvContent)
-        const points = csvData.map((d: any) => [d['axis-0'], d['axis-1']])
-        await this.viewer.add_points(points, { name: csvName })
+        const points = csvData.map((d: any) => [d['axis-1'], d['axis-0']])
+        await this.viewer.add_points(points, csvName)
       }
     },
 

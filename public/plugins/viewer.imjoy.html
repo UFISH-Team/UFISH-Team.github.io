@@ -20,7 +20,9 @@
 </config>
 
 <script lang="python">
+import io
 import tifffile
+from imjoy import api
 
 class Plugin():
     async def setup(self):
@@ -29,6 +31,7 @@ class Plugin():
             src="https://kaibu.org/#/app",
             window_id="kaibu-container"
         )
+        await self.viewer.open_sidebar(False)
         self.image = None
 
     def load_image_from_bytes(self, file_name, img_bytes):
@@ -37,11 +40,16 @@ class Plugin():
         with tifffile.TiffFile(_file) as tif:
             image = tif.asarray()
         self.image = image
+        return image
 
     async def view_img_from_bytes(self, file_name, bytes_):
+        await self.viewer.clear_layers()
         image = self.load_image_from_bytes(file_name, bytes_)
         await self.viewer.view_image(image, name=file_name)
         return image.shape
+
+    async def add_points(self, points, name="points"):
+        await self.viewer.add_points(points, name=name)
 
     async def run(self, ctx):
         pass
