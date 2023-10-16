@@ -4,10 +4,29 @@
     Number of images: {{ csvData?.length }},
     spots: {{ csvData?.reduce((acc, cur) => acc + parseInt(cur.num_spots), 0) }}
   </div>
-  <div id="umap-container"></div>
-  <div id="viewer-container">
-    <div id="kaibu-container"></div>
-  </div>
+  <v-card id="viewer-container">
+    <v-card id="umap-card">
+      <div id="umap-container"></div>
+
+      <v-overlay
+        v-model="umapOverlay"
+        contained
+        class="align-center justify-center"
+      >
+        <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      </v-overlay>
+    </v-card>
+    <v-card id="kaibu-card">
+      <div id="kaibu-container"></div>
+      <v-overlay
+        v-model="kaibuOverlay"
+        contained
+        class="align-center justify-center"
+      >
+        <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      </v-overlay>
+    </v-card>
+  </v-card>
   <div class="text-panel">
     All data can be downloaded from <a href="https://huggingface.co/datasets/GangCaoLab/FISH_spots">this HuggingFace🤗 repo</a>!
   </div>
@@ -33,7 +52,18 @@ export default {
     umapCSVUrl: window.location.origin + "/data/dataset_umap.csv",
     csvData: null as Array<UMAPData> | null,
     viewer: null as any,
+    imgBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
+    csvBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
   }),
+
+  computed: {
+    kaibuOverlay() {
+      return this.viewer === null
+    },
+    umapOverlay() {
+      return this.csvData === null
+    }
+  },
 
   mounted() {
     this.loadUMAPCSV()
@@ -56,6 +86,24 @@ export default {
         await viewer.set_mode("full")
       } else {
         setTimeout(() => this.loadViewer(), 1000)
+      }
+    },
+
+    async onClickPoint(data: any) {
+      if (this.viewer === null) {
+        return
+      } else {
+        const point = data.points[0];
+        const imgName = point.text.split("<br>")[0].split(":</b> ")[1]
+        console.log(`You clicked on point: ${imgName} at position (x: ${point.x}, y: ${point.y})`)
+        //const imgURL = this.imgBaseURL + imgName
+        //await this.viewer.view_image(imgURL, { name: imgName, type: 'itk-vtk' })
+        const csvName = imgName.replace(".tif", ".csv")
+        const csvURL = this.csvBaseURL + csvName
+        const csvContent = await fetch(csvURL).then(resp => resp.text())
+        const csvData = csv.toObjects(csvContent)
+        const points = csvData.map((d: any) => [d['axis-0'], d['axis-1']])
+        await this.viewer.add_points(points, { name: csvName })
       }
     },
 
@@ -103,10 +151,7 @@ export default {
 
       const umapPlot = document.getElementById('umap-container') as any;
       
-      umapPlot.on('plotly_click', function(data: any){
-        const point = data.points[0];
-        alert(`You clicked on point at position (x: ${point.x}, y: ${point.y})`);
-      })
+      umapPlot.on('plotly_click', this.onClickPoint)
     }
   },
 
@@ -122,19 +167,28 @@ export default {
 </script>
 
 <style scoped>
-#umap-container {
-  width: 70%;
-  min-width: 600px;
-  height: 800px;
+#umap-card {
+  width: 50%;
+  min-width: 400px;
 }
-#kaibu-container {
-  width: 90%;
+#umap-container {
   height: 600px;
 }
-#viewer-container {
+#kaibu-card {
+  width: 50%;
+  min-width: 400px;
+}
+#kaibu-container {
   width: 100%;
+  height: 600px;
+  overflow: auto;
+  resize: both;
+}
+#viewer-container {
+  width: 90%;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .text-panel {
   margin-top: 20px;

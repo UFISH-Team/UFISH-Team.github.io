@@ -1,0 +1,50 @@
+<config lang="json">
+{
+    "name": "ufish",
+    "type": "web-python",
+    "tags": [],
+    "flags": [],
+    "ui": "",
+    "version": "0.1.0",
+    "cover": "",
+    "description": "Plugin for read and view tiff files",
+    "icon": "extension",
+    "inputs": null,
+    "outputs": null,
+    "api_version": "0.1.8",
+    "env": "",
+    "permissions": [],
+    "requirements": ["tifffile"],
+    "dependencies": []
+}
+</config>
+
+<script lang="python">
+import tifffile
+
+class Plugin():
+    async def setup(self):
+        api.log("ufish plugin setup")
+        self.viewer = await api.createWindow(
+            src="https://kaibu.org/#/app",
+            window_id="kaibu-container"
+        )
+        self.image = None
+
+    def load_image_from_bytes(self, file_name, img_bytes):
+        _file = io.BytesIO(img_bytes)
+        _file.name = file_name
+        with tifffile.TiffFile(_file) as tif:
+            image = tif.asarray()
+        self.image = image
+
+    async def view_img_from_bytes(self, file_name, bytes_):
+        image = self.load_image_from_bytes(file_name, bytes_)
+        await self.viewer.view_image(image, name=file_name)
+        return image.shape
+
+    async def run(self, ctx):
+        pass
+
+api.export(Plugin())
+</script>
