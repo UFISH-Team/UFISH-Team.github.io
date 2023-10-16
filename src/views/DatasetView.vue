@@ -5,6 +5,9 @@
     spots: {{ csvData?.reduce((acc, cur) => acc + parseInt(cur.num_spots), 0) }}
   </div>
   <div id="umap-container"></div>
+  <div id="viewer-container">
+    <div id="kaibu-container"></div>
+  </div>
   <div class="text-panel">
     All data can be downloaded from <a href="https://huggingface.co/datasets/GangCaoLab/FISH_spots">this HuggingFace🤗 repo</a>!
   </div>
@@ -13,6 +16,8 @@
 <script lang="ts">
 import * as csv from "jquery-csv"
 import * as Plotly from "plotly.js-dist"
+
+declare var imjoy: any;
 
 interface UMAPData {
   x: number
@@ -27,10 +32,12 @@ export default {
   data: () => ({
     umapCSVUrl: window.location.origin + "/data/dataset_umap.csv",
     csvData: null as Array<UMAPData> | null,
+    viewer: null as any,
   }),
 
   mounted() {
     this.loadUMAPCSV()
+    this.loadViewer()
   },
 
   methods: {
@@ -39,6 +46,17 @@ export default {
       const resp = await fetch(csvUrl)
       const data = await resp.text()
       this.csvData = csv.toObjects(data)
+    },
+
+    async loadViewer() {
+      if (imjoy !== null) {
+        const viewer = await imjoy.api.createWindow(
+          { src: "https://kaibu.org/#/app", window_id: "kaibu-container" })
+        this.viewer = viewer
+        await viewer.set_mode("full")
+      } else {
+        setTimeout(() => this.loadViewer(), 1000)
+      }
     },
 
     async renderUMAP() {
@@ -89,7 +107,6 @@ export default {
         const point = data.points[0];
         alert(`You clicked on point at position (x: ${point.x}, y: ${point.y})`);
       })
-
     }
   },
 
@@ -107,10 +124,18 @@ export default {
 <style scoped>
 #umap-container {
   width: 70%;
-  min-width: 400px;
+  min-width: 600px;
   height: 800px;
 }
-
+#kaibu-container {
+  width: 90%;
+  height: 600px;
+}
+#viewer-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 .text-panel {
   margin-top: 20px;
   font-size: 1.5em;
