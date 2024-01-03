@@ -11,17 +11,64 @@ import * as directives from 'vuetify/directives'
 
 import App from './App.vue'
 import router from './router'
+import { isPluginMode } from './utils'
 
-const app = createApp(App)
+window.app = {}
+window.app.router = router
 
-app.use(createPinia())
-app.use(router)
+
+async function setupImJoyCore() {
+  loadImJoyCore().then((imjoyCore: any) => {
+    const core = new imjoyCore.ImJoy({
+      imjoy_api: {},
+    })
+    core.start({workspace: 'default'}).then(() => {
+      console.log('ImJoy Core started successfully!')
+      window.app.imjoy_api = core.api
+    })
+  })
+}
+
+async function createApi() {
+  async function setup() {
+    console.log("U-FISH is ready.")
+  }
+
+  return {
+    "setup": setup,
+    "run": () => {
+      console.log("run")
+    },
+  }
+}
+
+async function initImJoy() {
+  // start as an plugin
+  if (isPluginMode()) {
+    const imjoyRPC = await loadImJoyRPC();
+    const imjoy_api = await imjoyRPC.setupRPC({name: "ufish-web"});
+    window.app.imjoy_api = imjoy_api;
+    const ufish = await createApi();
+    window.app.ufish = ufish;
+    await imjoy_api.export(ufish)
+  } else {
+    // start as an standalone app
+    await setupImJoyCore();
+  }
+}
+
+initImJoy();
+
+const vueApp = createApp(App)
+
+vueApp.use(createPinia())
+vueApp.use(router)
 
 const vuetify = createVuetify({
   components,
   directives,
 })
-app.use(vuetify)
+vueApp.use(vuetify)
 
-app.mount('#app')
+vueApp.mount('#vue-app')
 

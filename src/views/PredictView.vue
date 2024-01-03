@@ -18,7 +18,7 @@
       <v-btn @click="run" :disabled="!hasData">Run</v-btn>
       <v-btn @click="download" :disabled="!hasOutput">Download</v-btn>
     </div>
-    <div id="kaibu-container"></div>
+    <div id="kaibu-container" v-if="showViewer"></div>
 
     <v-overlay
       v-model="overlay"
@@ -32,8 +32,7 @@
 
 <script lang="ts">
 import * as ort from 'onnxruntime-web';
-
-declare var imjoy: any;
+import { getImjoyApi, isPluginMode } from '@/utils';
 
 function downloadBlob(
     content: any, filename: string, contentType: string
@@ -63,6 +62,7 @@ export default {
     test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
     output: null as any,
     runInfoText: "loading...",
+    showViewer: !isPluginMode(),
   }),
   computed: {
     overlay() {
@@ -96,13 +96,10 @@ export default {
   },
   methods: {
     async loadPlugin() {
-      if (imjoy !== null) {
-        imjoy.api.log("Hello from Imjoy!")
-        const url = window.location.origin + "/plugins/ufish.imjoy.html"
-        this.plugin = await imjoy.api.loadPlugin({ src: url, })
-      } else {
-        setTimeout(this.loadPlugin, 1000)
-      }
+      const imjoy_api = await getImjoyApi()
+      imjoy_api.log("Hello from Imjoy!")
+      const url = window.location.origin + "/plugins/ufish.imjoy.html"
+      this.plugin = await imjoy_api.loadPlugin({ src: url, })
     },
 
     async loadOrtSession() {

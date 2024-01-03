@@ -27,9 +27,11 @@ from imjoy import api
 class Plugin():
     async def setup(self):
         api.log("ufish plugin setup")
+        viewer = await api.getWindow("Kaibu")
         self.viewer = await api.createWindow(
             src="https://kaibu.org/#/app",
-            window_id="kaibu-container"
+            window_id="kaibu-container",
+            name="Kaibu",
         )
         await self.viewer.open_sidebar(False)
         self.image = None

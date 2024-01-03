@@ -5,7 +5,7 @@
     spots: {{ csvData?.reduce((acc, cur) => acc + parseInt(cur.num_spots), 0) }}
   </div>
   <v-card id="viewer-container">
-    <v-card id="umap-card">
+    <v-card id="umap-card" :style="{ width: cardWidth }">
       <div id="umap-container"></div>
 
       <v-overlay
@@ -16,7 +16,7 @@
         <v-progress-circular indeterminate color="primary"></v-progress-circular>
       </v-overlay>
     </v-card>
-    <v-card id="kaibu-card">
+    <v-card id="kaibu-card" v-if="showViewer">
       <div id="kaibu-container"></div>
       <v-overlay
         v-model="kaibuOverlay"
@@ -35,8 +35,7 @@
 <script lang="ts">
 import * as csv from "jquery-csv"
 import * as Plotly from "plotly.js-dist"
-
-declare var imjoy: any;
+import { getImjoyApi, isPluginMode } from '@/utils';
 
 interface UMAPData {
   x: number
@@ -54,6 +53,7 @@ export default {
     viewer: null as any,
     imgBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
     csvBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
+    showViewer: !isPluginMode(),
   }),
 
   computed: {
@@ -62,6 +62,9 @@ export default {
     },
     umapOverlay() {
       return this.csvData === null
+    },
+    cardWidth() {
+      return this.showViewer ? "50%" : "100%"
     }
   },
 
@@ -79,13 +82,10 @@ export default {
     },
 
     async loadViewer() {
-      if (imjoy !== null) {
-        const pluginUrl = window.location.origin + "/plugins/viewer.imjoy.html"
-        const viewer = await imjoy.api.loadPlugin({ src: pluginUrl })
-        this.viewer = viewer
-      } else {
-        setTimeout(() => this.loadViewer(), 1000)
-      }
+      const imjoy_api = await getImjoyApi()
+      const pluginUrl = window.location.origin + "/plugins/viewer.imjoy.html"
+      const viewer = await imjoy_api.loadPlugin({ src: pluginUrl })
+      this.viewer = viewer
     },
 
     async onClickPoint(data: any) {
@@ -168,7 +168,6 @@ export default {
 
 <style scoped>
 #umap-card {
-  width: 50%;
   min-width: 400px;
 }
 #umap-container {

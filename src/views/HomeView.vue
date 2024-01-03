@@ -22,19 +22,10 @@
 </template>
 
 <script lang="ts">
-import { useImJoyStore } from '@/stores/imjoy';
 import InfoCard from '../components/InfoCard.vue';
 
 export default {
   methods: {
-    async loadImJoy() {
-      const { imjoy } = useImJoyStore()
-      if (imjoy !== null) {
-        imjoy.api.log("Hello from Imjoy!")
-        const viewer = await imjoy.api.createWindow({src: "https://kaibu.org/#/app", name: "Kaibu"})
-        await viewer.add_image("https://raw.githubusercontent.com/imjoy-team/kaibu/master/public/static/img/kaibu-logo.gif?sanitize=true")
-      } 
-    },
     gotoPage(page: string) {
       this.$router.push({ name: page })
     }
