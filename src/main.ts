@@ -11,7 +11,7 @@ import * as directives from 'vuetify/directives'
 
 import App from './App.vue'
 import router from './router'
-import { isPluginMode } from './utils'
+import { isPluginMode, removeNpArrProxy } from './utils'
 import { useRunStore } from './stores/run'
 
 window.app = {}
@@ -40,10 +40,34 @@ async function createApi() {
     await runStore.run()
   }
 
+  async function setInputImage(inputImage: object, inputName: string) {
+    const runStore = useRunStore()
+    runStore.setInputImage(inputImage, inputName)
+  }
+
+  async function getOutput() {
+    const runStore = useRunStore()
+    const out = await runStore.getOutput()
+    const res = {
+      enhanced: removeNpArrProxy(out?.enhanced),
+      spots: removeNpArrProxy(out?.spots),
+    }
+    return res
+  }
+
+  async function predict(inputImage: object) {
+    await setInputImage(inputImage, "input")
+    await run()
+    return await getOutput()
+  }
+
   return {
     "run": async () => {},
     "setup": setup,
     "runPredict": run,
+    "setInputImage": setInputImage,
+    "getOutput": getOutput,
+    "predict": predict,
   }
 }
 

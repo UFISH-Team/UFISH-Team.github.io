@@ -119,7 +119,9 @@ class Plugin():
             src="https://kaibu.org/#/app",
             window_id="kaibu-container"
         )
-        self.image = None
+        self.image = None  # input image
+        self.enhanced_image = None  # enhanced image
+        self.spots = None  # spots
 
     @staticmethod
     def load_image_from_bytes(file_name, img_bytes):
@@ -150,13 +152,17 @@ class Plugin():
         await self.viewer.view_image(image, name=file_name)
         return image.shape
 
-    async def view_img(self, image, name="image"):
+    async def view_img(self, image, name):
+        self.image = image
         await self.viewer.view_image(image, name=name)
+        return image.shape
 
     async def process_enhanced(self, enh_img):
         await self.viewer.view_image(enh_img, name="enhanced")
         df = call_spots_local_maxima(enh_img)
         coords = df.values
+        self.enhanced_image = enh_img
+        self.spots = coords
         await self.viewer.add_points(
             np.flip(coords, axis=1), name="spots")
         enh_bytes = self.save_image_to_bytes(enh_img)

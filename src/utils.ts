@@ -26,3 +26,8 @@ export function downloadBlob(
   pom.click();
 }
 
+export function removeNpArrProxy (parr: any) {
+  const arr = Object.assign({}, parr)
+  arr._rshape = Object.assign([], parr._rshape)
+  return arr
+}

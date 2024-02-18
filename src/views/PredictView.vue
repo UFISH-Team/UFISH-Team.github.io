@@ -32,7 +32,7 @@
 
 <script lang="ts">
 import * as ort from 'onnxruntime-web';
-import { getImjoyApi, isPluginMode, downloadBlob } from '@/utils';
+import { getImjoyApi, isPluginMode, downloadBlob, removeNpArrProxy } from '@/utils';
 import { ref, onMounted, watch } from 'vue';
 import { useRunStore } from '@/stores/run';
 
@@ -45,6 +45,8 @@ export default {
     const ortSession = ref(null as ort.InferenceSession | null)
     const runInfoText = ref("loading...")
     const hasError = ref(false)
+    const hasData = ref(false)
+    const output = ref(null as any)
 
     const runStore = useRunStore()
 
@@ -103,23 +105,29 @@ export default {
 
     async function run() {
       running.value = true
-      let output;
       try {
         const sImg = await plugin.value.scale_image()
         const f32data = new Float32Array(sImg._rvalue)
         const input = new ort.Tensor(
         sImg._rdtype, f32data, sImg._rshape);
-        output = await infer_2d(input)
+        const modelOut = await infer_2d(input)
         const outImg = {
           _rtype: "ndarray",
-          _rdtype: output.type,
-          _rshape: output.dims,
-          _rvalue: (output.data as Float32Array).buffer
+          _rdtype: modelOut.type,
+          _rshape: modelOut.dims,
+          _rvalue: (modelOut.data as Float32Array).buffer
         }
         const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(outImg)
-        output = {
+        output.value = {
           enhanced: enhBytes,
           coords: coords
+        }
+
+        if (isPluginMode()) {
+          runStore.setOutput({
+            enhanced: outImg,
+            spots: coords,
+          })
         }
         runInfoText.value = `Done, ${numSpots} spots detected.`
         running.value = false
@@ -132,8 +140,8 @@ export default {
       }
     }
 
-    watch(() => runStore.queryCount, async () => {
-      if (runStore.queryCount > 0) {
+    watch(() => runStore.runQueryCount, async () => {
+      if (runStore.runQueryCount > 0) {
         console.log('running from store')
         await run()
       }
@@ -143,6 +151,29 @@ export default {
       runStore.setRunable(!running.value)
     })
 
+    watch(() => runStore.inputImage, async (newVal: any) => {
+      if (newVal !== null) {
+        try {
+          const data = removeNpArrProxy(newVal.data)
+          const shape = await plugin.value.view_img(data, newVal.name)
+          if (shape.length !== 2) {
+            runInfoText.value = `Image loaded, shape: ${shape}, but it's not 2D, please try another image.`
+            hasError.value = true
+          } else {
+            runInfoText.value = `Image loaded, shape: ${shape}`
+            hasError.value = false
+          }
+          hasData.value = true
+          output.value = null
+        } catch (error) {
+          runInfoText.value = "Failed to load image, see console for more detail."
+          console.log(error)
+          hasError.value = true
+        }
+        runStore.clearInputImage()
+      }
+    })
+
     return {
       plugin,
       run,
@@ -150,14 +181,14 @@ export default {
       hasError,
       runInfoText,
       ortSession,
+      hasData,
+      output,
     }
   },
   data: () => ({
     loadingData: false,
-    hasData: false,
     modelLoaded: false,
     test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
-    output: null as any,
     showViewer: !isPluginMode(),
   }),
   computed: {
@@ -191,6 +222,7 @@ export default {
         this.loadingData = false
         this.hasData = true
         this.hasError = false
+        this.output = null
       } else {
         setTimeout(this.loadExample, 1000)
       }
@@ -224,6 +256,7 @@ export default {
           }
           this.loadingData = false
           this.hasData = true
+          this.output = null
         }
         reader.readAsArrayBuffer(file)
       }
