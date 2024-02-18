@@ -12,6 +12,7 @@ import * as directives from 'vuetify/directives'
 import App from './App.vue'
 import router from './router'
 import { isPluginMode } from './utils'
+import { useRunStore } from './stores/run'
 
 window.app = {}
 window.app.router = router
@@ -34,11 +35,15 @@ async function createApi() {
     console.log("U-FISH is ready.")
   }
 
+  async function run() {
+    const runStore = useRunStore()
+    await runStore.run()
+  }
+
   return {
+    "run": async () => {},
     "setup": setup,
-    "run": () => {
-      console.log("run")
-    },
+    "runPredict": run,
   }
 }
 
@@ -50,6 +55,7 @@ async function initImJoy() {
     window.app.imjoy_api = imjoy_api;
     const ufish = await createApi();
     window.app.ufish = ufish;
+    router.push("/predict")
     await imjoy_api.export(ufish)
   } else {
     // start as an standalone app

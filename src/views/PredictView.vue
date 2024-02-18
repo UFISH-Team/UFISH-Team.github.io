@@ -33,7 +33,8 @@
 <script lang="ts">
 import * as ort from 'onnxruntime-web';
 import { getImjoyApi, isPluginMode, downloadBlob } from '@/utils';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { useRunStore } from '@/stores/run';
 
 export default {
   setup() {
@@ -44,6 +45,8 @@ export default {
     const ortSession = ref(null as ort.InferenceSession | null)
     const runInfoText = ref("loading...")
     const hasError = ref(false)
+
+    const runStore = useRunStore()
 
     async function loadPlugin() {
       const imjoy_api = await getImjoyApi()
@@ -83,6 +86,7 @@ export default {
       const plugP = loadPlugin()
       plugP.then(() => {
         runInfoText.value = "Plugin loaded"
+        runStore.setRunable(true)
       })
       plugP.catch((e) => {
         runInfoText.value = "Failed to load plugin, see console for more detail."
@@ -99,12 +103,12 @@ export default {
 
     async function run() {
       running.value = true
-      const sImg = await plugin.value.scale_image()
-      const f32data = new Float32Array(sImg._rvalue)
-      const input = new ort.Tensor(
-        sImg._rdtype, f32data, sImg._rshape);
       let output;
       try {
+        const sImg = await plugin.value.scale_image()
+        const f32data = new Float32Array(sImg._rvalue)
+        const input = new ort.Tensor(
+        sImg._rdtype, f32data, sImg._rshape);
         output = await infer_2d(input)
         const outImg = {
           _rtype: "ndarray",
@@ -127,6 +131,17 @@ export default {
         return
       }
     }
+
+    watch(() => runStore.queryCount, async () => {
+      if (runStore.queryCount > 0) {
+        console.log('running from store')
+        await run()
+      }
+    })
+
+    watch(() => running.value, () => {
+      runStore.setRunable(!running.value)
+    })
 
     return {
       plugin,

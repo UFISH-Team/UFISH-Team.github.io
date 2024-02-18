@@ -26,6 +26,9 @@ export const useRunStore = defineStore("run", {
       await waitRunable();
       this.queryCount += 1;
       await waitRunable();
+    },
+    setRunable(runable: boolean) {
+      this.runable = runable;
     }
   }
 }) 

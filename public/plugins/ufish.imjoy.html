@@ -121,7 +121,8 @@ class Plugin():
         )
         self.image = None
 
-    def load_image_from_bytes(self, file_name, img_bytes):
+    @staticmethod
+    def load_image_from_bytes(file_name, img_bytes):
         _file = io.BytesIO(img_bytes)
         _file.name = file_name
         if file_name.endswith(".tif") or file_name.endswith(".tiff"):
@@ -134,24 +135,18 @@ class Plugin():
             image = image.squeeze()
         else:
             image = imageio.imread(_file)
-        self.image = image
         return image
 
-    def save_image_to_bytes(self, image):
+    @staticmethod
+    def save_image_to_bytes(image):
         _file = io.BytesIO()
         with tifffile.TiffWriter(_file) as tif:
             tif.save(image)
         return _file.getvalue()
 
-    async def predict_2d(self, image):
-        image = scale_image(image)
-        enh_img = await self.onnx_runner.infer_2d(image)
-        df = call_spots_local_maxima(enh_img)
-        coords = df.values
-        return enh_img, coords
-
     async def view_img_from_bytes(self, file_name, bytes_):
         image = self.load_image_from_bytes(file_name, bytes_)
+        self.image = image
         await self.viewer.view_image(image, name=file_name)
         return image.shape
 
