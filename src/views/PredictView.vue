@@ -39,6 +39,7 @@ import { useRunStore } from '@/stores/run';
 export default {
   setup() {
     const modelUrl = window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx"
+    const test_data_url = "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif"
 
     const running = ref(false)
     const plugin = ref(null as any)
@@ -47,7 +48,7 @@ export default {
     const hasError = ref(false)
     const hasData = ref(false)
     const output = ref(null as any)
-
+    const loadingData = ref(false)
     const runStore = useRunStore()
 
     async function loadPlugin() {
@@ -103,6 +104,19 @@ export default {
       })
     })
 
+    function checkInputShape(shape: number[]) {
+      if (shape.length === 3 && shape[2] === 3) {
+        runInfoText.value = `Image loaded, shape: ${shape}. Will treat it as an RGB image.`
+        hasError.value = false
+      } else if (shape.length !== 2) {
+        runInfoText.value = `Image loaded, shape: ${shape}, but it's not 2D, please try another image.`
+        hasError.value = true
+      } else {
+        runInfoText.value = `Image loaded, shape: ${shape}`
+        hasError.value = false
+      }
+    }
+
     async function run() {
       running.value = true
       try {
@@ -156,13 +170,7 @@ export default {
         try {
           const data = removeNpArrProxy(newVal.data)
           const shape = await plugin.value.view_img(data, newVal.name)
-          if (shape.length !== 2) {
-            runInfoText.value = `Image loaded, shape: ${shape}, but it's not 2D, please try another image.`
-            hasError.value = true
-          } else {
-            runInfoText.value = `Image loaded, shape: ${shape}`
-            hasError.value = false
-          }
+          checkInputShape(shape)
           hasData.value = true
           output.value = null
         } catch (error) {
@@ -174,61 +182,7 @@ export default {
       }
     })
 
-    return {
-      plugin,
-      run,
-      running,
-      hasError,
-      runInfoText,
-      ortSession,
-      hasData,
-      output,
-    }
-  },
-  data: () => ({
-    loadingData: false,
-    modelLoaded: false,
-    test_data_url: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
-    showViewer: !isPluginMode(),
-  }),
-  computed: {
-    overlay() {
-      return (
-        (this.plugin === null) ||
-        (this.ortSession === null) ||
-        (this.loadingData) ||
-        (this.running)
-      )
-    },
-    hasOutput() {
-      return this.output !== null
-    }
-  },
-  methods: {
-    async loadExample() {
-      this.loadingData = true
-      if (this.plugin !== null) {
-        const res = await fetch(this.test_data_url)
-        if (!res.ok) {
-          this.loadingData = false
-          this.runInfoText = `Failed to load example image, status: ${res.status}`
-          this.hasError = true
-          return
-        }
-        const data = await res.arrayBuffer()
-        const fileName = this.test_data_url.split('/').pop()
-        const shape = await this.plugin.view_img_from_bytes(fileName, data)
-        this.runInfoText = `Image loaded, shape: ${shape}`
-        this.loadingData = false
-        this.hasData = true
-        this.hasError = false
-        this.output = null
-      } else {
-        setTimeout(this.loadExample, 1000)
-      }
-    },
-
-    async loadLocalImage() {
+    async function loadLocalImage() {
       const fileInput = document.createElement('input')
       fileInput.type = 'file'
       fileInput.accept = 'image/*'
@@ -245,30 +199,77 @@ export default {
         reader.onload = async () => {
           const data = reader.result
           const fileName = file.name
-          this.loadingData = true
-          const shape = await this.plugin.view_img_from_bytes(fileName, data)
-          if (shape.length !== 2) {
-            this.runInfoText = `Image loaded, shape: ${shape}, but it's not 2D, please try another image.`
-            this.hasError = true
-          } else {
-            this.runInfoText = `Image loaded, shape: ${shape}`
-            this.hasError = false
-          }
-          this.loadingData = false
-          this.hasData = true
-          this.output = null
+          loadingData.value = true
+          const shape = await plugin.value.view_img_from_bytes(fileName, data)
+          checkInputShape(shape)
+          loadingData.value = false
+          hasData.value = true
+          output.value = null
         }
         reader.readAsArrayBuffer(file)
       }
       fileInput.click()
-    },
-
-    async download() {
-      downloadBlob(this.output.enhanced, "enhanced.tif", "image/tiff")
-      downloadBlob(this.output.coords, "coords.csv", "text/csv;charset=utf-8;")
     }
 
-  }
+    async function loadExample() {
+      loadingData.value = true
+      if (plugin.value !== null) {
+        const res = await fetch(test_data_url)
+        if (!res.ok) {
+          loadingData.value = false
+          runInfoText.value = `Failed to load example image, status: ${res.status}`
+          hasError.value = true
+          return
+        }
+        const data = await res.arrayBuffer()
+        const fileName = test_data_url.split('/').pop()
+        const shape = await plugin.value.view_img_from_bytes(fileName, data)
+        runInfoText.value = `Image loaded, shape: ${shape}`
+        loadingData.value = false
+        hasData.value = true
+        hasError.value = false
+        output.value = null
+      } else {
+        setTimeout(loadExample, 1000)
+      }
+    }
+
+    async function download() {
+      downloadBlob(output.value.enhanced, "enhanced.tif", "image/tiff")
+      downloadBlob(output.value.coords, "coords.csv", "text/csv;charset=utf-8;")
+    }
+
+    return {
+      plugin,
+      run,
+      running,
+      hasError,
+      runInfoText,
+      ortSession,
+      hasData,
+      output,
+      loadLocalImage,
+      loadingData,
+      loadExample,
+      download,
+    }
+  },
+  computed: {
+    overlay() {
+      return (
+        (this.plugin === null) ||
+        (this.ortSession === null) ||
+        (this.loadingData) ||
+        (this.running)
+      )
+    },
+    hasOutput() {
+      return this.output !== null
+    },
+    showViewer() {
+      return !isPluginMode()
+    }
+  },
 }
 </script>
 

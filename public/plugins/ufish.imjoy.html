@@ -173,7 +173,15 @@ class Plugin():
         return enh_bytes, csv_bytes, num_spots
 
     async def scale_image(self):
-        image = scale_image(self.image)
+        image = self.image
+        if len(image.shape) == 3:
+            channel_axis = np.argmin(image.shape)
+            image = image.mean(axis=channel_axis)
+        elif len(image.shape) != 2:
+            raise ValueError(
+                f"Image has {len(image.shape)} dimensions. "
+                "Only 2D and 3D images are supported.")
+        image = scale_image(image)
         return image
 
     async def run(self, ctx):
