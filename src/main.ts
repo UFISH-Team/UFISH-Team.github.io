@@ -35,6 +35,11 @@ async function createApi() {
     console.log("U-FISH is ready.")
   }
 
+  async function waitRunable() {
+    const runStore = useRunStore()
+    await runStore.waitRunable()
+  }
+
   async function run() {
     const runStore = useRunStore()
     await runStore.run()
@@ -56,6 +61,7 @@ async function createApi() {
   }
 
   async function predict(inputImage: object) {
+    await waitRunable()
     await setInputImage(inputImage, "input")
     await run()
     return await getOutput()
@@ -64,6 +70,7 @@ async function createApi() {
   return {
     "run": async () => {},
     "setup": setup,
+    "waitReady": waitRunable,
     "runPredict": run,
     "setInputImage": setInputImage,
     "getOutput": getOutput,

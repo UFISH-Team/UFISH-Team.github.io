@@ -40,6 +40,9 @@ export const useRunStore = defineStore("run", {
     outputGetable: false,
   }),
   actions: {
+    async waitRunable() {
+      await waitRunable();
+    },
     async run() {
       await waitRunable();
       this.runQueryCount += 1;
