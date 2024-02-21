@@ -211,10 +211,10 @@ export default {
       fileInput.click()
     }
 
-    async function loadExample() {
+    async function loadFromUrl(url: string) {
       loadingData.value = true
       if (plugin.value !== null) {
-        const res = await fetch(test_data_url)
+        const res = await fetch(url)
         if (!res.ok) {
           loadingData.value = false
           runInfoText.value = `Failed to load example image, status: ${res.status}`
@@ -230,14 +230,41 @@ export default {
         hasError.value = false
         output.value = null
       } else {
-        setTimeout(loadExample, 1000)
+        setTimeout(() => loadFromUrl(url), 1000)
       }
     }
+
+    const loadExample = () => loadFromUrl(test_data_url)
 
     async function download() {
       downloadBlob(output.value.enhanced, "enhanced.tif", "image/tiff")
       downloadBlob(output.value.coords, "coords.csv", "text/csv;charset=utf-8;")
     }
+
+    async function fetchImageFromUrl(url: string) {
+      const res = await fetch(url)
+      if (!res.ok) {
+        throw new Error(`Failed to fetch image from ${url}, status: ${res.status}`)
+      }
+      const data = await res.arrayBuffer()
+      const fileName = url.split('/').pop()
+      const arr = await plugin.value.load_image_from_bytes(fileName, data)
+      return arr
+    }
+
+    watch(() => runStore.imageUrl, async (newVal) => {
+      if (newVal !== null) {
+        try {
+          const arr = await fetchImageFromUrl(newVal)
+          runStore.setFetchedImage(arr)
+          runStore.setImageUrl(null)
+        } catch (error) {
+          console.log(error)
+          runStore.setFetchedImage(null)
+          runStore.setImageUrl(null)
+        }
+      }
+    })
 
     return {
       plugin,

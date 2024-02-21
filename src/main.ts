@@ -67,14 +67,24 @@ async function createApi() {
     return await getOutput()
   }
 
+  async function fetchImage(url: string) {
+    await waitRunable()
+    const runStore = useRunStore()
+    runStore.setImageUrl(url)
+    const arr = await runStore.getFetchedImage()
+    const res = removeNpArrProxy(arr)
+    return res
+  }
+
   return {
-    "run": async () => {},
+    "run": async () => {await waitRunable()},
     "setup": setup,
     "waitReady": waitRunable,
     "runPredict": run,
     "setInputImage": setInputImage,
     "getOutput": getOutput,
     "predict": predict,
+    "fetchImage": fetchImage,
   }
 }
 

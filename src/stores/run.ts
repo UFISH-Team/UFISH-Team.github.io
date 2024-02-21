@@ -21,6 +21,11 @@ export async function waitOutputGetable() {
   await waitState(() => store.outputGetable, true);
 }
 
+export async function waitFetchGetable() {
+  const store = useRunStore();
+  await waitState(() => store.fetchGetable, true);
+}
+
 type ApiInput = {
   data: object,
   name: string,
@@ -38,6 +43,9 @@ export const useRunStore = defineStore("run", {
     inputImage: null as ApiInput | null,
     output: null as ApiOutput | null,
     outputGetable: false,
+    imageUrl: null as string | null,
+    fetchedImage: null as object | null,
+    fetchGetable: false,
   }),
   actions: {
     async waitRunable() {
@@ -66,5 +74,19 @@ export const useRunStore = defineStore("run", {
       await waitOutputGetable();
       return this.output;
     },
+    setImageUrl(url: string | null) {
+      this.imageUrl = url;
+      if (url !== null) {
+        this.fetchGetable = false;
+      }
+    },
+    setFetchedImage(image: object | null) {
+      this.fetchedImage = image;
+      this.fetchGetable = true;
+    },
+    async getFetchedImage() {
+      await waitFetchGetable();
+      return this.fetchedImage;
+    }
   }
 }) 

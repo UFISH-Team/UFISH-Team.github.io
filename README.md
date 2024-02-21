@@ -10,9 +10,8 @@ Online instance: [ufish-web](https://ufish-team.github.io/#/)
 Usage example:
 
 ```Python
-import numpy as np
-ufish = await api.createWindow("https://ufish-team.github.io/")
-img = np.random.rand(100, 100)  # generate a random image
+ufish = await api.createWindow("http://localhost:5173/")
+img = await ufish.fetchImage("https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif")
 out = await ufish.predict(img)  # predict the spots
 print(out.enhanced.shape)
 print(out.spots.shape)
@@ -29,6 +28,7 @@ CLick to run it using: [web-python-console](https://nanguage.github.io/web-pytho
 | `setInputImage` | `img: np.ndarray; name: string` | Set the input image. |
 | `getOutput` | | Get the output of the model. It's an object contain `enhanced: np.ndarray` and `spots: np.ndarray` fields |
 | `runPredict` | | Run the prediction. |
+| `fetchImage` | `url: string` | Fetch an image from the given url, return a numpy array |
 
 ## Development
 

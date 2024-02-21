@@ -123,8 +123,7 @@ class Plugin():
         self.enhanced_image = None  # enhanced image
         self.spots = None  # spots
 
-    @staticmethod
-    def load_image_from_bytes(file_name, img_bytes):
+    async def load_image_from_bytes(self, file_name, img_bytes):
         _file = io.BytesIO(img_bytes)
         _file.name = file_name
         if file_name.endswith(".tif") or file_name.endswith(".tiff"):
@@ -139,15 +138,14 @@ class Plugin():
             image = imageio.imread(_file)
         return image
 
-    @staticmethod
-    def save_image_to_bytes(image):
+    async def save_image_to_bytes(self, image):
         _file = io.BytesIO()
         with tifffile.TiffWriter(_file) as tif:
             tif.save(image)
         return _file.getvalue()
 
     async def view_img_from_bytes(self, file_name, bytes_):
-        image = self.load_image_from_bytes(file_name, bytes_)
+        image = await self.load_image_from_bytes(file_name, bytes_)
         self.image = image
         await self.viewer.view_image(image, name=file_name)
         return image.shape
@@ -165,7 +163,7 @@ class Plugin():
         self.spots = coords
         await self.viewer.add_points(
             np.flip(coords, axis=1), name="spots")
-        enh_bytes = self.save_image_to_bytes(enh_img)
+        enh_bytes = await self.save_image_to_bytes(enh_img)
         fake_csv_file = io.StringIO()
         coords_csv = df.to_csv(fake_csv_file, index=False)
         csv_bytes = fake_csv_file.getvalue().encode()
