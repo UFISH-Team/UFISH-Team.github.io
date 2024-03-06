@@ -51,8 +51,8 @@ export default {
     umapCSVUrl: window.location.origin + "/data/dataset_umap.csv",
     csvData: null as Array<UMAPData> | null,
     viewer: null as any,
-    imgBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
-    csvBaseURL: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/",
+    imgBaseURL: "https://huggingface.co/datasets/GangCaoLab/FISH_spots/resolve/main/2d/image/",
+    csvBaseURL: "https://huggingface.co/datasets/GangCaoLab/FISH_spots/resolve/main/2d/csv/",
     showViewer: !isPluginMode(),
   }),
 
