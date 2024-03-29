@@ -138,9 +138,10 @@ export default {
         }
 
         if (isPluginMode()) {
+          const spots = await plugin.value.get_spots()
           runStore.setOutput({
             enhanced: outImg,
-            spots: coords,
+            spots: spots,
           })
         }
         runInfoText.value = `Done, ${numSpots} spots detected.`

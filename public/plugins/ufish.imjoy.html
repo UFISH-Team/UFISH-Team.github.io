@@ -169,6 +169,9 @@ class Plugin():
         csv_bytes = fake_csv_file.getvalue().encode()
         num_spots = df.shape[0]
         return enh_bytes, csv_bytes, num_spots
+    
+    async def get_spots(self):
+        return self.spots
 
     async def scale_image(self):
         image = self.image

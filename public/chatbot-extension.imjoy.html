@@ -1,0 +1,87 @@
+<docs>
+[TODO: write documentation for this plugin.]
+</docs>
+
+<config lang="json">
+{
+  "name": "chatbot-ufish",
+  "type": "web-worker",
+  "tags": [],
+  "ui": "",
+  "version": "0.1.0",
+  "cover": "",
+  "description": "Register ufish-web to chatbot",
+  "icon": "extension",
+  "inputs": null,
+  "outputs": null,
+  "api_version": "0.1.8",
+  "env": "",
+  "permissions": [],
+  "requirements": [],
+  "dependencies": []
+}
+</config>
+
+<script lang="javascript">
+class ImJoyPlugin {
+  async setup() {
+    if (api.registerChatbotExtension) {
+      const chatbot = api
+      await this.registerExtensions(chatbot.registerChatbotExtension)
+    } else {
+      let chatbot = await api.getWindow("BioImage.IO Chatbot")
+      if (chatbot) {
+        await this.registerExtensions(chatbot.registerExtension)
+      } else {
+        chatbot = await api.createWindow({src: "https://chat.bioimage.io/public/apps/bioimageio-chatbot-client/chat", name: "BioImage.IO Chatbot"})
+        await this.registerExtensions(chatbot.registerExtension)
+      }
+    }
+  }
+    
+  async registerExtensions(register) {
+    await register({
+      _rintf: true,
+      name: "runUfish",
+      description: "The extension allow chatbot run U-FISH web client",
+      async get_schema() {
+        return {
+          type: "object",
+          title: "RunUfish",
+          description: "Run U-FISH web client",
+          properties: {
+          },
+        };
+      },
+      async execute(config) {
+        let client = await api.getWindow("ufish");
+        if (!client) {
+          client = await api.createWindow({
+            src: "https://ufish-team.github.io/",
+            name: "ufish",
+          });
+          await client.waitReady();
+        }
+        await client.runPredict();
+        const output = await client.getOutput();
+        return "Done"
+      },
+    })
+
+    api.log('initialized')
+  }
+
+  async run(ctx) {
+    let client = await api.getWindow("ufish");
+    if (!client) {
+      client = await api.createWindow({
+        src: "https://ufish-team.github.io/",
+        name: "ufish",
+      });
+      await client.waitReady();
+    }
+  }
+}
+
+api.export(new ImJoyPlugin())
+</script>
