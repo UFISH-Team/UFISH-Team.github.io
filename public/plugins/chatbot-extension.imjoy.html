@@ -103,12 +103,21 @@ class ImJoyPlugin {
               type: "number",
               description: "Diameter of the cells",
               default: 60,
-            }
+            },
+            "model_type": {
+              type: "string",
+              description: "Model type, cyto or nuclei",
+              default: "cyto",
+            },
+            "flow_threshold": {
+              type: "number",
+              description: "Flow threshold",
+              default: 0.4,
+            },
           },
         };
       },
       execute: async (config) => {
-        debugger
         const client = await this.getUfishClient()
         const bioengine_runner = await this.getBioengineRunner()
         const img = await client.getInputImage()

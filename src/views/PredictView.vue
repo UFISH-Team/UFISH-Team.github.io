@@ -132,7 +132,8 @@ export default {
           _rshape: modelOut.dims,
           _rvalue: (modelOut.data as Float32Array).buffer
         }
-        const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(outImg)
+        const viewEnhanced = !isPluginMode()
+        const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(outImg, viewEnhanced)
         output.value = {
           enhanced: enhBytes,
           coords: coords

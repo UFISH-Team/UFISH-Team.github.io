@@ -159,8 +159,9 @@ class Plugin():
         await self.viewer.view_image(image, name=name)
         return image.shape
 
-    async def process_enhanced(self, enh_img):
-        await self.viewer.view_image(enh_img, name="enhanced")
+    async def process_enhanced(self, enh_img, view_enhanced=True):
+        if view_enhanced:
+            await self.viewer.view_image(enh_img, name="enhanced")
         df = call_spots_local_maxima(enh_img)
         coords = df.values
         self.enhanced_image = enh_img
