@@ -1,0 +1,99 @@
+
+<config lang="json">
+{
+    "name": "bioengine-runner",
+    "type": "web-python",
+    "tags": [],
+    "flags": [],
+    "ui": "",
+    "version": "0.1.0",
+    "cover": "",
+    "description": "Run models in bioengine server",
+    "icon": "extension",
+    "inputs": null,
+    "outputs": null,
+    "api_version": "0.1.8",
+    "env": "",
+    "permissions": [],
+    "requirements": ["numpy", "imjoy-rpc", "scikit-image"],
+    "dependencies": []
+}
+</config>
+
+<script lang="python">
+from imjoy_rpc.hypha import connect_to_server
+from imjoy import api
+from skimage.measure import find_contours, approximate_polygon
+
+SERVER_URL = "https://ai.imjoy.io"
+
+async def run_model(model_id, input_image, kwargs, server_url=SERVER_URL):
+    server = await connect_to_server(
+        {"server_url": server_url}
+    )
+    triton = await server.get_service("triton-client")
+    if model_id == "cellpose":
+        # Run cellpose model
+        ret = await triton.execute(
+            inputs=[input_image, kwargs],
+            model_name="cellpose-python",
+            decode_json=True,
+        )
+        return ret["mask"]
+    else:
+        # Run inference
+        ret = await triton.execute(
+            inputs=[{"inputs": [input_image], "model_id": model_id}],
+            model_name="bioengine-model-runner",
+            serialization="imjoy",
+        )
+        result = ret["result"]
+        mask = result['outputs'][0]
+        return mask
+
+
+class Plugin():
+    async def setup(self):
+        api.log("bioengine runner plugin setup")
+        self.mask = None
+        self.coutours = None
+
+    async def run_model(self, model, img, kwargs):
+        mask = await run_model(model, img, kwargs)
+        self.mask = mask
+
+    async def run_cellpose(self, img, kwargs):
+        img = img.astype("float32")
+        if img.ndim == 2:
+            img = img[None, :, :]
+        elif img.ndim == 3:
+            # RGB image
+            # swap min channel to first
+            min_channel = np.argmin(img.shape)
+            img = np.moveaxis(img, min_channel, 0)
+        mask = await run_model("cellpose", img, kwargs)
+        self.mask = mask
+
+    async def get_mask(self):
+        return self.mask
+
+    async def compute_mask_coutours(self):
+        mask = self.mask[0]
+        print(mask.shape)
+        contours = find_contours(mask, 0.5)
+        res = []
+        for contour in contours:
+            coords = approximate_polygon(contour, tolerance=2.5)
+            coords = coords.tolist()
+            coords = [[p[1], p[0]] for p in coords]
+            res.append(coords)
+        self.coutours = res
+
+    async def get_coutours(self):
+        return self.coutours
+
+    async def run(self, ctx):
+        pass
+
+api.export(Plugin())
+</script>

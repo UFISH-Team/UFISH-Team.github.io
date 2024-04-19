@@ -76,6 +76,11 @@ async function createApi() {
     return res
   }
 
+  async function getInputImage() {
+    await waitRunable()
+    return await window.app.ufish_py.get_input_image()
+  }
+
   return {
     "run": async () => {await waitRunable()},
     "setup": setup,
@@ -85,6 +90,7 @@ async function createApi() {
     "getOutput": getOutput,
     "predict": predict,
     "fetchImage": fetchImage,
+    "getInputImage": getInputImage,
   }
 }
 

@@ -1,10 +1,16 @@
 <script lang="ts">
 import { RouterView } from 'vue-router'
+import { isPluginMode } from '@/utils';
 
 export default {
   data: () => ({
     drawer: false,
   }),
+  computed: {
+    isPluginMode() {
+      return isPluginMode()
+    }
+  },
   methods: {
     gotoPage(page: string) {
       this.$router.push({ name: page })
@@ -58,7 +64,7 @@ export default {
       <div class="container">
         <RouterView />
         <div style="margin-top: 1em; height: 2em;"></div>
-        <div class="footer">2023 U-FISH Team</div>
+        <div class="footer" v-if="!isPluginMode">2023 U-FISH Team</div>
       </div>
     </v-main>
   </v-app>

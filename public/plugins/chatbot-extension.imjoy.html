@@ -1,0 +1,148 @@
+<docs>
+[TODO: write documentation for this plugin.]
+</docs>
+
+<config lang="json">
+{
+  "name": "chatbot-ufish",
+  "type": "web-worker",
+  "tags": [],
+  "ui": "",
+  "version": "0.1.0",
+  "cover": "",
+  "description": "Register ufish-web to chatbot",
+  "icon": "extension",
+  "inputs": null,
+  "outputs": null,
+  "api_version": "0.1.8",
+  "env": "",
+  "permissions": [],
+  "requirements": [],
+  "dependencies": []
+}
+</config>
+
+<script lang="javascript">
+const chatbot_url = "https://bioimage.io/chat/"
+const ufish_url = "http://localhost:5173"
+const bioengine_url = "http://localhost:5173/plugins/bioengine_runner.imjoy.html"
+
+class ImJoyPlugin {
+  async setup() {
+    if (api.registerChatbotExtension) {
+      const chatbot = api
+      await this.registerExtensions(chatbot.registerChatbotExtension)
+    } else {
+      let chatbot = await api.getWindow("BioImage.IO Chatbot")
+      if (chatbot) {
+        await this.registerExtensions(chatbot.registerExtension)
+      } else {
+        chatbot = await api.createWindow({src: chatbot_url, name: "BioImage.IO Chatbot"})
+        await this.registerExtensions(chatbot.registerExtension)
+      }
+    }
+    await this.getUfishClient()
+    await this.getBioengineRunner()
+  }
+
+  async getUfishClient() {
+    let client = await api.getWindow("ufish");
+    if (!client) {
+      client = await api.createWindow({
+        src: ufish_url,
+        name: "ufish",
+      });
+    }
+    return client
+  }
+
+  async getBioengineRunner() {
+    let plugin;
+    try {
+      plugin = await api.getPlugin("bioengine-runner")
+    } catch (e) {
+      plugin = await api.loadPlugin({src: bioengine_url, name: "bioengine-runner"})
+    }
+    return plugin
+  }
+    
+  async registerExtensions(register) {
+    await register({
+      _rintf: true,
+      name: "runUfish",
+      description: "The extension allow chatbot run U-FISH web client",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "RunUfish",
+          description: "Run U-FISH web client",
+          properties: {
+          },
+        };
+      },
+      execute: async (config) => {
+        const client = await this.getUfishClient()
+        await client.waitReady();
+        await client.runPredict();
+        const output = await client.getOutput();
+        return "Done"
+      },
+    })
+
+    await register({
+      _rintf: true,
+      name: "runCellpose",
+      description: "The extension allow chatbot run cellpose model",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "RunCellpose",
+          description: "Run cellpose model",
+          properties: {
+            "diameter": {
+              type: "number",
+              description: "Diameter of the cells",
+              default: 60,
+            }
+          },
+        };
+      },
+      execute: async (config) => {
+        debugger
+        const client = await this.getUfishClient()
+        const bioengine_runner = await this.getBioengineRunner()
+        const img = await client.getInputImage()
+        await bioengine_runner.run_cellpose(img, {diameter: config.diameter})
+        await bioengine_runner.compute_mask_coutours()
+        const coutours = await bioengine_runner.get_coutours()
+        const kaibu = await api.getWindow("Kaibu")
+        const annotation_layer = await kaibu.add_shapes([], {name: 'cellpose-segmentation'})
+        for (let i = 0; i < coutours.length; i++) {
+          const coords = coutours[i]
+          const polygon = {
+            type: "Feature",
+            coordinates: [coords],
+            geometry: {
+                type: "Polygon",
+                coordinates: [coords],
+            },
+            properties: {
+                edgecolor: "#FF0000",
+                edge_width: 2,
+                face_color: "#FF00000F",
+                size: 7,
+            },
+          }
+          annotation_layer.add_feature(polygon)
+        }
+      },
+    })
+
+    api.log('initialized')
+  }
+
+  async run(ctx) { }
+}
+
+api.export(new ImJoyPlugin())
+</script>

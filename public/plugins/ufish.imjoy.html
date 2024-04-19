@@ -117,11 +117,15 @@ class Plugin():
         api.log("ufish plugin setup")
         self.viewer = await api.createWindow(
             src="https://kaibu.org/#/app",
-            window_id="kaibu-container"
+            window_id="kaibu-container",
+            name="Kaibu",
         )
         self.image = None  # input image
         self.enhanced_image = None  # enhanced image
         self.spots = None  # spots
+
+    async def get_input_image(self):
+        return self.image
 
     async def load_image_from_bytes(self, file_name, img_bytes):
         _file = io.BytesIO(img_bytes)

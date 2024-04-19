@@ -1,6 +1,6 @@
 <template>
-  <h1>Run U-FISH in browser</h1>
-  <div class="info-panel">
+  <h1 v-if="!isPluginMode">Run U-FISH in browser</h1>
+  <div class="info-panel" v-if="!isPluginMode">
     <p>
       Hello, this is a demo of U-FISH running in the browser.
     </p>
@@ -55,7 +55,8 @@ export default {
       const imjoy_api = await getImjoyApi()
       imjoy_api.log("Hello from Imjoy!")
       const url = window.location.origin + "/plugins/ufish.imjoy.html"
-      plugin.value = await imjoy_api.loadPlugin({ src: url, })
+      plugin.value = await imjoy_api.loadPlugin({ src: url })
+      window.app.ufish_py = plugin.value
     }
 
     async function infer_2d(input: ort.Tensor) {
@@ -294,8 +295,11 @@ export default {
     hasOutput() {
       return this.output !== null
     },
+    isPluginMode() {
+      return isPluginMode()
+    },
     showViewer() {
-      return !isPluginMode()
+      return !this.isPluginMode
     }
   },
 }
@@ -304,6 +308,7 @@ export default {
 <style scoped>
 .pred-container {
   width: 80%;
+  min-width: 600px;
 }
 .left-align-item {
   align-self: start;
