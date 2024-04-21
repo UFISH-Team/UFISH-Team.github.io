@@ -1,14 +1,14 @@
 
 <config lang="json">
 {
-    "name": "bioengine-runner",
+    "name": "ufish-chatbot-utils",
     "type": "web-python",
     "tags": [],
     "flags": [],
     "ui": "",
     "version": "0.1.0",
     "cover": "",
-    "description": "Run models in bioengine server",
+    "description": "ufish chatbot utils for segmentation and analysis",
     "icon": "extension",
     "inputs": null,
     "outputs": null,
@@ -54,7 +54,7 @@ async def run_model(model_id, input_image, kwargs, server_url=SERVER_URL):
 
 class Plugin():
     async def setup(self):
-        api.log("bioengine runner plugin setup")
+        api.log("ufish chatbot utils plugin setup")
         self.mask = None
         self.coutours = None
 

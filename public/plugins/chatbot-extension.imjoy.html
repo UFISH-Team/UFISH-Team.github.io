@@ -25,7 +25,8 @@
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
 const ufish_url = "https://ufish-team.github.io/"
-const bioengine_url = "https://ufish-team.github.io/plugins/bioengine_runner.imjoy.html"
+const utils_url = "http://localhost:5173/plugins/chatbot-utils.imjoy.html"
+const py_console_url = "https://nanguage.github.io/web-python-console/"
 
 class ImJoyPlugin {
   async setup() {
@@ -42,7 +43,9 @@ class ImJoyPlugin {
       }
     }
     await this.getUfishClient()
-    await this.getBioengineRunner()
+    await this.getChatbotUtils()
+    this.annotation_layer = null
+    this.ufish_spots = null
   }
 
   async getUfishClient() {
@@ -56,17 +59,29 @@ class ImJoyPlugin {
     return client
   }
 
-  async getBioengineRunner() {
+  async getChatbotUtils() {
     let plugin;
     try {
-      plugin = await api.getPlugin("bioengine-runner")
+      plugin = await api.getPlugin("ufish-chatbot-utils")
     } catch (e) {
-      plugin = await api.loadPlugin({src: bioengine_url, name: "bioengine-runner"})
+      plugin = await api.loadPlugin({src: utils_url, name: "ufish-chatbot-utils"})
+    }
+    return plugin
+  }
+
+  async getPythonConsole() {
+    let plugin = await api.getWindow("web-python-console");
+    if (!plugin) {
+      plugin = await api.createWindow({
+        src: py_console_url,
+        name: "web-python-console",
+      });
     }
     return plugin
   }
     
   async registerExtensions(register) {
+    // Extension allow chatbot run U-FISH web client
     await register({
       _rintf: true,
       name: "runUfish",
@@ -75,7 +90,7 @@ class ImJoyPlugin {
         return {
           type: "object",
           title: "RunUfish",
-          description: "Run U-FISH web client",
+          description: "Run U-FISH web client to detect spots in the image",
           properties: {
           },
         };
@@ -85,10 +100,12 @@ class ImJoyPlugin {
         await client.waitReady();
         await client.runPredict();
         const output = await client.getOutput();
+        this.ufish_spots = output.spots
         return "Done"
       },
     })
 
+    // Extension allow chatbot run cellpose model
     await register({
       _rintf: true,
       name: "runCellpose",
@@ -119,13 +136,14 @@ class ImJoyPlugin {
       },
       execute: async (config) => {
         const client = await this.getUfishClient()
-        const bioengine_runner = await this.getBioengineRunner()
+        const utils = await this.getChatbotUtils()
         const img = await client.getInputImage()
-        await bioengine_runner.run_cellpose(img, {diameter: config.diameter})
-        await bioengine_runner.compute_mask_coutours()
-        const coutours = await bioengine_runner.get_coutours()
+        await utils.run_cellpose(img, {diameter: config.diameter})
+        await utils.compute_mask_coutours()
+        const coutours = await utils.get_coutours()
         const kaibu = await api.getWindow("Kaibu")
         const annotation_layer = await kaibu.add_shapes([], {name: 'cellpose-segmentation'})
+        this.annotation_layer = annotation_layer
         for (let i = 0; i < coutours.length; i++) {
           const coords = coutours[i]
           const polygon = {
@@ -144,8 +162,58 @@ class ImJoyPlugin {
           }
           annotation_layer.add_feature(polygon)
         }
+        return "Done"
       },
     })
+
+    const pycodeDescription = `
+    The extension allow chatbot execute Python code in Pyodide environment.
+
+    Code reference:
+      + The `api` is the ImJoy API object, it's a global variable in the Pyodide environment.
+      + You can get the spots (numpy array) using this code:
+        \`\`\`
+        ufish = await api.getWindow("ufish")
+        spots = (await ufish.getOutput())['spots']
+        \`\`\`
+      + You can get the input image (numpy array) using this code:
+        \`\`\`
+        ufish = await api.getWindow("ufish")
+        input_img = await ufish.getInputImage()
+        \`\`\`
+      + You can get the enhanced image (numpy array) using this code:
+        \`\`\`
+        ufish = await api.getWindow("ufish")
+        enhanced_img = (await ufish.getOutput())['enhanced']
+        \`\`\`
+`
+
+    // Extension allow execute Python code
+    await register(({
+      _rintf: true,
+      name: "runPythonCode",
+      description: "The extension allow chatbot execute Python code in Pyodide environment",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "runPythonCode",
+          description: pycodeDescription,
+          properties: {
+            "code": {
+              type: "string",
+              description: "Python code to execute",
+              default: "print('Hello World')",
+            },
+          },
+        };
+      },
+      execute: async (config) => {
+        const console = await this.getPythonConsole()
+        await console.exec(config.code)
+        const console_content = await console.get_content()
+        return console_content
+      },
+    }))
 
     api.log('initialized')
   }
