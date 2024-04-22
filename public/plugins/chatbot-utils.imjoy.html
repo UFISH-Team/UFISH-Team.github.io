@@ -24,6 +24,7 @@
 from imjoy_rpc.hypha import connect_to_server
 from imjoy import api
 from skimage.measure import find_contours, approximate_polygon
+from skimage.draw import polygon2mask
 
 SERVER_URL = "https://ai.imjoy.io"
 
@@ -91,6 +92,24 @@ class Plugin():
 
     async def get_coutours(self):
         return self.coutours
+
+    async def count_spots_in_cells(self, spots, img_shape, features):
+        features = features['features']
+        counts = []
+        if len(img_shape) == 3:
+            img_shape = img_shape[:2]
+        print(img_shape)
+        for feature in features:
+            coords = feature['geometry']['coordinates'][0]
+            polygon = np.array(coords, dtype=np.int32)
+            # swap x and y
+            polygon = np.c_[polygon[:, 1], polygon[:, 0]]
+            print(polygon)
+            mask = polygon2mask(img_shape, polygon)
+            mask = mask.astype(np.uint8)
+            count = int(mask[spots[:, 0], spots[:, 1]].sum())
+            counts.append(count)
+        return counts
 
     async def run(self, ctx):
         pass

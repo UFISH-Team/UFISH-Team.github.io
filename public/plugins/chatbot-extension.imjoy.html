@@ -25,7 +25,7 @@
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
 const ufish_url = "https://ufish-team.github.io/"
-const utils_url = "http://localhost:5173/plugins/chatbot-utils.imjoy.html"
+const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const py_console_url = "https://nanguage.github.io/web-python-console/"
 
 class ImJoyPlugin {
@@ -170,18 +170,18 @@ class ImJoyPlugin {
     The extension allow chatbot execute Python code in Pyodide environment.
 
     Code reference:
-      + The `api` is the ImJoy API object, it's a global variable in the Pyodide environment.
-      + You can get the spots (numpy array) using this code:
+      + The \`api\` is the ImJoy API object, it's a global variable in the Pyodide environment.
+      + Get the spots (numpy array) of U-FISH result:
         \`\`\`
         ufish = await api.getWindow("ufish")
         spots = (await ufish.getOutput())['spots']
         \`\`\`
-      + You can get the input image (numpy array) using this code:
+      + Get the input image (numpy array) of U-FISH:
         \`\`\`
         ufish = await api.getWindow("ufish")
         input_img = await ufish.getInputImage()
         \`\`\`
-      + You can get the enhanced image (numpy array) using this code:
+      + Get the enhanced image (numpy array) of U-FISH:
         \`\`\`
         ufish = await api.getWindow("ufish")
         enhanced_img = (await ufish.getOutput())['enhanced']
@@ -214,6 +214,53 @@ class ImJoyPlugin {
         return console_content
       },
     }))
+
+    // Extension allow count spots in cells
+    await register({
+      _rintf: true,
+      name: "countSpotsInCells",
+      description: "The extension allow chatbot count spots in cells",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "countSpotsInCells",
+          description: "Count spots in cells",
+          properties: {
+            "use_selected": {
+              type: "boolean",
+              description: "Use selected cells",
+              default: false,
+            },
+          },
+        };
+      },
+      execute: async (config) => {
+        const spots = this.ufish_spots
+        if (!spots) {
+          return "Please run U-FISH first"
+        }
+        const anno_layer = this.annotation_layer
+        if (!anno_layer) {
+          return "Please run cellpose first"
+        }
+        const utils = await this.getChatbotUtils()
+        const client = await this.getUfishClient()
+        const img = await client.getInputImage()
+        if (!img) {
+          return "Please open an image first"
+        }
+        const img_shape = img._rshape
+        let cell_features;
+        if (config.use_selected) {
+          cell_features = await anno_layer.get_selected_features()
+        } else {
+          cell_features = await anno_layer.get_features()
+        }
+        const spots_in_cells = await utils.count_spots_in_cells(
+          spots, img_shape, cell_features)
+        return "Number of spots in cells: " + spots_in_cells
+      },
+    })
 
     api.log('initialized')
   }
