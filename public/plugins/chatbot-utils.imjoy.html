@@ -63,15 +63,17 @@ class Plugin():
         mask = await run_model(model, img, kwargs)
         self.mask = mask
 
-    async def run_cellpose(self, img, kwargs):
+    async def run_cellpose(self, img, channel, kwargs):
         img = img.astype("float32")
-        if img.ndim == 2:
-            img = img[None, :, :]
-        elif img.ndim == 3:
+        if img.ndim == 3:
             # RGB image
             # swap min channel to first
             min_channel = np.argmin(img.shape)
             img = np.moveaxis(img, min_channel, 0)
+            img = img[channel]
+        elif img.ndim > 3:
+            raise ValueError("Image should be 2D or 3D")
+        img = img[None, :, :]
         mask = await run_model("cellpose", img, kwargs)
         self.mask = mask
 

@@ -106,7 +106,7 @@ export default {
     })
 
     function checkInputShape(shape: number[]) {
-      if (shape.length === 3 && shape[2] === 3) {
+      if (shape.length === 3 && ((shape[2] === 3) || (shape[2] === 4))) {
         runInfoText.value = `Image loaded, shape: ${shape}. Will treat it as an RGB image.`
         hasError.value = false
       } else if (shape.length !== 2) {
@@ -120,8 +120,11 @@ export default {
 
     async function run() {
       running.value = true
+      const channel = runStore.channel
+      const pThreshold = runStore.pThreshold
+      const viewEnhanced = runStore.viewEnhanced
       try {
-        const sImg = await plugin.value.scale_image()
+        const sImg = await plugin.value.scale_image(channel)
         const f32data = new Float32Array(sImg._rvalue)
         const input = new ort.Tensor(
         sImg._rdtype, f32data, sImg._rshape);
@@ -132,8 +135,8 @@ export default {
           _rshape: modelOut.dims,
           _rvalue: (modelOut.data as Float32Array).buffer
         }
-        const viewEnhanced = !isPluginMode()
-        const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(outImg, viewEnhanced)
+        const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(
+          outImg, viewEnhanced, pThreshold)
         output.value = {
           enhanced: enhBytes,
           coords: coords

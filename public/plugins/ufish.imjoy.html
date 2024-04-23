@@ -119,6 +119,7 @@ class Plugin():
             src="https://kaibu.org/#/app",
             window_id="kaibu-container",
             name="Kaibu",
+            w=38, h=20
         )
         self.image = None  # input image
         self.enhanced_image = None  # enhanced image
@@ -159,10 +160,10 @@ class Plugin():
         await self.viewer.view_image(image, name=name)
         return image.shape
 
-    async def process_enhanced(self, enh_img, view_enhanced=True):
+    async def process_enhanced(self, enh_img, view_enhanced=True, pThreshold=0.5):
         if view_enhanced:
             await self.viewer.view_image(enh_img, name="enhanced")
-        df = call_spots_local_maxima(enh_img)
+        df = call_spots_local_maxima(enh_img, intensity_threshold=pThreshold)
         coords = df.values
         self.enhanced_image = enh_img
         self.spots = coords
@@ -178,11 +179,14 @@ class Plugin():
     async def get_spots(self):
         return self.spots
 
-    async def scale_image(self):
+    async def scale_image(self, channel=None):
         image = self.image
         if len(image.shape) == 3:
             channel_axis = np.argmin(image.shape)
-            image = image.mean(axis=channel_axis)
+            if channel is not None:
+                image = image.take(channel, axis=channel_axis)
+            else:
+                image = image.mean(axis=channel_axis)
         elif len(image.shape) != 2:
             raise ValueError(
                 f"Image has {len(image.shape)} dimensions. "

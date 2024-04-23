@@ -40,8 +40,9 @@ async function createApi() {
     await runStore.waitRunable()
   }
 
-  async function run() {
+  async function run(channel=null, pThreshold=0.5, viewEnhanced=true) {
     const runStore = useRunStore()
+    runStore.setParams(channel, pThreshold, viewEnhanced)
     await runStore.run()
   }
 
@@ -60,10 +61,10 @@ async function createApi() {
     return res
   }
 
-  async function predict(inputImage: object) {
+  async function predict(inputImage: object, channel=null, pThreshold=0.5, viewEnhanced=true) {
     await waitRunable()
     await setInputImage(inputImage, "input")
-    await run()
+    await run(channel, pThreshold, viewEnhanced)
     return await getOutput()
   }
 

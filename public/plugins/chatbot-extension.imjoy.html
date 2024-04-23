@@ -25,6 +25,7 @@
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
 const ufish_url = "https://ufish-team.github.io/"
+//const ufish_url = "http://localhost:5173/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const py_console_url = "https://nanguage.github.io/web-python-console/"
 
@@ -38,7 +39,10 @@ class ImJoyPlugin {
       if (chatbot) {
         await this.registerExtensions(chatbot.registerExtension)
       } else {
-        chatbot = await api.createWindow({src: chatbot_url, name: "BioImage.IO Chatbot"})
+        chatbot = await api.createWindow({
+          src: chatbot_url, name: "BioImage.IO Chatbot",
+          w: 20, h: 40
+        })
         await this.registerExtensions(chatbot.registerExtension)
       }
     }
@@ -54,6 +58,7 @@ class ImJoyPlugin {
       client = await api.createWindow({
         src: ufish_url,
         name: "ufish",
+        w: 25, h: 8
       });
     }
     return client
@@ -75,6 +80,7 @@ class ImJoyPlugin {
       plugin = await api.createWindow({
         src: py_console_url,
         name: "web-python-console",
+        w: 25, h: 30
       });
     }
     return plugin
@@ -92,13 +98,28 @@ class ImJoyPlugin {
           title: "RunUfish",
           description: "Run U-FISH web client to detect spots in the image",
           properties: {
-          },
-        };
+            "channel": {
+              type: "number",
+              description: "Channel to use",
+              default: 0,
+            },
+            "pThreshold": {
+              type: "number",
+              description: "Threshold for spot detection",
+              default: 0.5,
+            },
+            "viewEnhanced": {
+              type: "boolean",
+              description: "View enhanced image",
+              default: false,
+            },
+          }
+        }
       },
       execute: async (config) => {
         const client = await this.getUfishClient()
         await client.waitReady();
-        await client.runPredict();
+        await client.runPredict(config.channel, config.pThreshold, config.viewEnhanced);
         const output = await client.getOutput();
         this.ufish_spots = output.spots
         return "Done"
@@ -119,18 +140,23 @@ class ImJoyPlugin {
             "diameter": {
               type: "number",
               description: "Diameter of the cells",
-              default: 60,
+              default: 40,
             },
             "model_type": {
               type: "string",
-              description: "Model type, cyto or nuclei",
-              default: "cyto",
+              description: "Model type, nuclei or cyto",
+              default: "nuclei",
             },
             "flow_threshold": {
               type: "number",
               description: "Flow threshold",
               default: 0.4,
             },
+            "channel": {
+              type: "number",
+              description: "Channel to use",
+              default: 2,
+            }
           },
         };
       },
@@ -138,7 +164,15 @@ class ImJoyPlugin {
         const client = await this.getUfishClient()
         const utils = await this.getChatbotUtils()
         const img = await client.getInputImage()
-        await utils.run_cellpose(img, {diameter: config.diameter})
+        await utils.run_cellpose(
+          img,
+          config.channel,
+          {
+            diameter: config.diameter,
+            model_type: config.model_type,
+            flow_threshold: config.flow_threshold,
+          }
+        )
         await utils.compute_mask_coutours()
         const coutours = await utils.get_coutours()
         const kaibu = await api.getWindow("Kaibu")

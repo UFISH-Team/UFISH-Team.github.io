@@ -46,6 +46,9 @@ export const useRunStore = defineStore("run", {
     imageUrl: null as string | null,
     fetchedImage: null as object | null,
     fetchGetable: false,
+    channel: null as (number | null),
+    pThreshold: 0.5,
+    viewEnhanced: true,
   }),
   actions: {
     async waitRunable() {
@@ -87,6 +90,11 @@ export const useRunStore = defineStore("run", {
     async getFetchedImage() {
       await waitFetchGetable();
       return this.fetchedImage;
+    },
+    setParams(channel: number | null, pThreshold: number, viewEnhanced: boolean) {
+      this.channel = channel;
+      this.pThreshold = pThreshold;
+      this.viewEnhanced = viewEnhanced;
     }
   }
 }) 
