@@ -63,7 +63,7 @@ class Plugin():
         mask = await run_model(model, img, kwargs)
         self.mask = mask
 
-    async def run_cellpose(self, img, channel, kwargs):
+    async def run_cellpose_bioengine(self, img, channel, kwargs):
         img = img.astype("float32")
         if img.ndim == 3:
             # RGB image
@@ -75,13 +75,33 @@ class Plugin():
             raise ValueError("Image should be 2D or 3D")
         img = img[None, :, :]
         mask = await run_model("cellpose", img, kwargs)
+        self.mask = mask[0]
+
+    async def run_cellpose(self, img, channel, kwargs):
+        img = img.astype("uint8")
+        if img.ndim == 3:
+            # RGB image
+            # swap min channel to first
+            min_channel = np.argmin(img.shape)
+            img = np.moveaxis(img, min_channel, 0)
+            img = img[channel]
+        elif img.ndim > 3:
+            raise ValueError("Image should be 2D or 3D")
+        cellpose = await api.createWindow(src="https://www.cellpose.org/")
+        res = await cellpose.segment({
+            "input": img,
+            "diam": kwargs.get("diameter", 40),
+            "outputs": ["mask"],
+        })
+        mask = res['mask'][:,:,0]
+        print(mask.shape)
         self.mask = mask
 
     async def get_mask(self):
         return self.mask
 
     async def compute_mask_coutours(self):
-        mask = self.mask[0]
+        mask = self.mask
         print(mask.shape)
         contours = find_contours(mask, 0.5)
         res = []
