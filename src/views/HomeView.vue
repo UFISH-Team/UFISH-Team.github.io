@@ -3,6 +3,9 @@
     <div class="info-text">
       U-FISH is a deep learning method for FISH spot ✨ detection.
     </div>
+    <div style="font-family:Arial, Helvetica, sans-serif">
+      See our pre-print at <a href="https://www.biorxiv.org/content/10.1101/2024.03.06.583706v1">bioRxiv</a>!
+    </div>
     <div class="card-container">
       <InfoCard
         img="/images/dataset2.jpg"
@@ -14,6 +17,11 @@
         title="Predict"
         subtitle="Run U-FISH model in brwoser"
         :click-action="()=>{gotoPage('predict')}" />
+      <InfoCard
+        img="/images/chatbot.webp"
+        title="Chatbot"
+        subtitle="Use U-FISH with Bioimage.IO Chatbot"
+        :click-action="()=>{gotoPage('chatbot')}" />
     </div>
     <div class="info-text">
       Try it now! 🔥

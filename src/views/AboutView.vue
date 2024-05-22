@@ -14,7 +14,6 @@
         <a href="https://github.com/UFISH-Team">U-FISH Team.</a>
       </p>
     </div>
-    <img src="https://github.com/UFISH-Team/U-FISH/blob/main/docs/ufish.png?raw=true" />
     <h2>Web app</h2>
     <div>
       <p>
@@ -27,6 +26,7 @@
         The source code is available at <a href="https://github.com/UFISH-Team/UFISH-Team.github.io">here</a>.
       </p>
     </div>
+    <img src="https://github.com/UFISH-Team/U-FISH/blob/main/docs/ufish.png?raw=true" />
   </div>
 </template>
 

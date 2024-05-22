@@ -54,6 +54,9 @@ export default {
         <v-list-item prepend-icon="mdi-play-circle-outline"
           @click="()=>{gotoPage('predict')}"
           title="Predict" value="predict"></v-list-item>
+        <v-list-item prepend-icon="mdi-robot"
+          @click="()=>{gotoPage('chatbot')}"
+          title="Chatbot" value="chatbot"></v-list-item>
         <v-list-item prepend-icon="mdi-information-outline"
           @click="()=>{gotoPage('about')}"
           title="About" value="about"></v-list-item>
