@@ -49,6 +49,7 @@ export const useRunStore = defineStore("run", {
     channel: null as (number | null),
     pThreshold: 0.5,
     viewEnhanced: true,
+    exampleImageUrl: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
   }),
   actions: {
     async waitRunable() {
@@ -95,6 +96,9 @@ export const useRunStore = defineStore("run", {
       this.channel = channel;
       this.pThreshold = pThreshold;
       this.viewEnhanced = viewEnhanced;
+    },
+    setExampleImageUrl(url: string) {
+      this.exampleImageUrl = url;
     }
   }
 }) 

@@ -24,8 +24,8 @@
 
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
-const ufish_url = "https://ufish-team.github.io/"
-//const ufish_url = "http://localhost:5173/"
+//const ufish_url = "https://ufish-team.github.io/"
+const ufish_url = "http://localhost:5173/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const py_console_url = "https://nanguage.github.io/web-python-console/"
 
@@ -58,9 +58,10 @@ class ImJoyPlugin {
       client = await api.createWindow({
         src: ufish_url,
         name: "ufish",
-        w: 25, h: 8
+        w: 25, h: 6
       });
     }
+    client.setExampleImageUrl(ufish_url + "images/test_fish_img2.jpg")
     return client
   }
 
@@ -99,9 +100,9 @@ class ImJoyPlugin {
           description: "Run U-FISH web client to detect spots in the image",
           properties: {
             "channel": {
-              type: "number",
+              type: "number | null",
               description: "Channel to use",
-              default: 0,
+              default: null,
             },
             "pThreshold": {
               type: "number",
@@ -140,7 +141,7 @@ class ImJoyPlugin {
             "diameter": {
               type: "number",
               description: "Diameter of the cells",
-              default: 40,
+              default: 50,
             },
             "model_type": {
               type: "string",

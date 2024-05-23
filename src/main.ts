@@ -82,6 +82,11 @@ async function createApi() {
     return await window.app.ufish_py.get_input_image()
   }
 
+  async function setExampleImageUrl(url: string) {
+    const runStore = useRunStore()
+    runStore.setExampleImageUrl(url)
+  }
+
   return {
     "run": async () => {await waitRunable()},
     "setup": setup,
@@ -92,6 +97,7 @@ async function createApi() {
     "predict": predict,
     "fetchImage": fetchImage,
     "getInputImage": getInputImage,
+    "setExampleImageUrl": setExampleImageUrl,
   }
 }
 

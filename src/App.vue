@@ -24,7 +24,7 @@ export default {
 
 <template>
   <v-app>
-    <v-app-bar color="info">
+    <v-app-bar color="info" v-if="!isPluginMode">
       <template v-slot:prepend>
         <v-app-bar-nav-icon
           color="white"

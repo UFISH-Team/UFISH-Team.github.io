@@ -39,7 +39,6 @@ import { useRunStore } from '@/stores/run';
 export default {
   setup() {
     const modelUrl = window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx"
-    const test_data_url = "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif"
 
     const running = ref(false)
     const plugin = ref(null as any)
@@ -228,7 +227,7 @@ export default {
           return
         }
         const data = await res.arrayBuffer()
-        const fileName = test_data_url.split('/').pop()
+        const fileName = url.split('/').pop()
         const shape = await plugin.value.view_img_from_bytes(fileName, data)
         runInfoText.value = `Image loaded, shape: ${shape}`
         loadingData.value = false
@@ -240,7 +239,11 @@ export default {
       }
     }
 
-    const loadExample = () => loadFromUrl(test_data_url)
+    const loadExample = () => {
+      const store = useRunStore()
+      const test_data_url = store.exampleImageUrl
+      loadFromUrl(test_data_url)
+    }
 
     async function download() {
       downloadBlob(output.value.enhanced, "enhanced.tif", "image/tiff")
