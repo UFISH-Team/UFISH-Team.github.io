@@ -23,7 +23,7 @@
 <script lang="python">
 from imjoy_rpc.hypha import connect_to_server
 from imjoy import api
-from skimage.measure import find_contours, approximate_polygon
+from skimage.measure import find_contours, approximate_polygon, regionprops
 from skimage.draw import polygon2mask
 
 SERVER_URL = "https://ai.imjoy.io"
@@ -96,20 +96,22 @@ class Plugin():
         mask = res['mask'][:,:,0]
         print(mask.shape)
         self.mask = mask
+        await cellpose.close()
 
     async def get_mask(self):
         return self.mask
 
     async def compute_mask_coutours(self):
         mask = self.mask
-        print(mask.shape)
-        contours = find_contours(mask, 0.5)
+        print("Mask shape:", mask.shape)
         res = []
-        for contour in contours:
-            coords = approximate_polygon(contour, tolerance=2.5)
-            coords = coords.tolist()
-            coords = [[p[1], p[0]] for p in coords]
-            res.append(coords)
+        for region in regionprops(mask):
+            contours = find_contours(mask == region.label, 0.5)
+            for contour in contours:
+                coords = approximate_polygon(contour, tolerance=2.5)
+                coords = coords.tolist()
+                coords = [[p[1], p[0]] for p in coords]
+                res.append(coords)
         self.coutours = res
 
     async def get_coutours(self):
