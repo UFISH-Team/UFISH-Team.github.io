@@ -40,9 +40,9 @@ async function createApi() {
     await runStore.waitRunable()
   }
 
-  async function run(channel=null, pThreshold=0.5, viewEnhanced=true) {
+  async function run(channel=null, pThreshold=0.5, headless=False, viewEnhanced=true) {
     const runStore = useRunStore()
-    runStore.setParams(channel, pThreshold, viewEnhanced)
+    runStore.setParams(channel, pThreshold, headless, viewEnhanced)
     await runStore.run()
   }
 
@@ -61,10 +61,12 @@ async function createApi() {
     return res
   }
 
-  async function predict(inputImage: object, channel=null, pThreshold=0.5, viewEnhanced=true) {
+  async function predict(inputImage: object, channel=null, pThreshold=0.5, headless=false, viewEnhanced=true) {
+    const runStore = useRunStore()
+    runStore.setParams(channel, pThreshold, headless, viewEnhanced)
     await waitRunable()
     await setInputImage(inputImage, "input")
-    await run(channel, pThreshold, viewEnhanced)
+    await run(channel, pThreshold, headless, viewEnhanced)
     return await getOutput()
   }
 
@@ -87,6 +89,11 @@ async function createApi() {
     runStore.setExampleImageUrl(url)
   }
 
+  async function setOnnxModelUrl(url: string) {
+    const runStore = useRunStore()
+    runStore.setOnnxModelUrl(url)
+  }
+
   return {
     "run": async () => {await waitRunable()},
     "setup": setup,
@@ -98,6 +105,7 @@ async function createApi() {
     "fetchImage": fetchImage,
     "getInputImage": getInputImage,
     "setExampleImageUrl": setExampleImageUrl,
+    "setOnnxModelUrl": setOnnxModelUrl,
   }
 }
 

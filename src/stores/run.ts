@@ -49,7 +49,9 @@ export const useRunStore = defineStore("run", {
     channel: null as (number | null),
     pThreshold: 0.5,
     viewEnhanced: true,
+    headless: false,
     exampleImageUrl: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
+    onnxModelUrl: "http://localhost:5173/model/v1.0-alldata-ufish_c32.onnx",
   }),
   actions: {
     async waitRunable() {
@@ -92,13 +94,17 @@ export const useRunStore = defineStore("run", {
       await waitFetchGetable();
       return this.fetchedImage;
     },
-    setParams(channel: number | null, pThreshold: number, viewEnhanced: boolean) {
+    setParams(channel: number | null, pThreshold: number, headless: boolean, viewEnhanced: boolean) {
       this.channel = channel;
       this.pThreshold = pThreshold;
+      this.headless = headless;
       this.viewEnhanced = viewEnhanced;
     },
     setExampleImageUrl(url: string) {
       this.exampleImageUrl = url;
+    },
+    setOnnxModelUrl(url: string) {
+      this.onnxModelUrl = url;
     }
   }
 }) 

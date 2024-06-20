@@ -38,8 +38,6 @@ import { useRunStore } from '@/stores/run';
 
 export default {
   setup() {
-    const modelUrl = window.location.origin + "/model/v1.0-alldata-ufish_c32.onnx"
-
     const running = ref(false)
     const plugin = ref(null as any)
     const ortSession = ref(null as ort.InferenceSession | null)
@@ -77,6 +75,8 @@ export default {
     }
 
     async function loadOrtSession() {
+      ortSession.value = null
+      const modelUrl = runStore.onnxModelUrl
       ort.env.wasm.numThreads = 4
       ort.env.wasm.simd = true
       const session = await ort.InferenceSession.create(
@@ -122,6 +122,7 @@ export default {
       const channel = runStore.channel
       const pThreshold = runStore.pThreshold
       const viewEnhanced = runStore.viewEnhanced
+      const headless = runStore.headless
       try {
         const sImg = await plugin.value.scale_image(channel)
         const f32data = new Float32Array(sImg._rvalue)
@@ -135,7 +136,7 @@ export default {
           _rvalue: (modelOut.data as Float32Array).buffer
         }
         const [enhBytes, coords, numSpots] = await plugin.value.process_enhanced(
-          outImg, viewEnhanced, pThreshold)
+          outImg, headless, viewEnhanced, pThreshold)
         output.value = {
           enhanced: enhBytes,
           coords: coords
@@ -174,7 +175,12 @@ export default {
       if (newVal !== null) {
         try {
           const data = removeNpArrProxy(newVal.data)
-          const shape = await plugin.value.view_img(data, newVal.name)
+          let shape;
+          if (runStore.headless) {
+            shape = await plugin.value.set_input_image(data)
+          } else {
+            shape = await plugin.value.view_img(data, newVal.name)
+          }
           checkInputShape(shape)
           hasData.value = true
           output.value = null
@@ -184,6 +190,22 @@ export default {
           hasError.value = true
         }
         runStore.clearInputImage()
+      }
+    })
+
+    watch(() => runStore.onnxModelUrl, async (newVal) => {
+      if (newVal !== null) {
+        runStore.setRunable(false)
+        try {
+          await loadOrtSession()
+        } catch (error) {
+          runInfoText.value = "Failed to load ONNX session, see console for more detail."
+          console.log(error)
+          hasError.value = true
+        }
+        runStore.setRunable(true)
+        runInfoText.value = "ONNX model loaded: " + newVal.split('/').pop()
+        hasError.value = false
       }
     })
 
