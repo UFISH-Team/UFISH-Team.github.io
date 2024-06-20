@@ -33,6 +33,8 @@ from functools import reduce
 from skimage.segmentation import watershed
 import numpy as np
 import random
+import matplotlib
+matplotlib.use("module://matplotlib_pyodide.wasm_backend")
 
 
 def extract_cells(
@@ -140,7 +142,7 @@ async def call_spots(ufish_instance, img, ch=[0, 1]):
     uf = ufish_instance
     spots_list = []
     for c in ch:
-        res = await uf.predict(img[:, :, c], headless=True)
+        res = await uf.predict(img[:, :, c], None, 0.5, True)
         spots = res['spots']
         spots_list.append(spots)
     return spots_list
@@ -467,8 +469,43 @@ class Plugin():
         return client
 
     def result_summary(self):
-        summary = f"Number of cells: {len(self.res['table'])}"
+        summary = " ".join([
+            "Done",
+            f"Number of cells: {len(self.res['table'])}",
+            "Results of all cells saved in plugin, prepared for further analysis.",
+        ])
         return summary
+
+    async def draw_sample_results(self, max_plots=50):
+        if self.res is None:
+            return None
+        rois = self.res["rois"]
+        masks = self.res["masks"]
+        signals = self.res["signals"]
+        fig = plot_all_rois(
+            rois, masks, signals,
+            colors={"ch1": "hotpink", "ch2": "lime", "ch1+ch2": "yellow"},
+            max_plots=max_plots)
+        base64_str = fig_to_base64(fig)
+        return base64_str
+
+    async def draw_single_result(self, idx):
+        if self.res is None:
+            return None
+        w = idx
+        rois = self.res["rois"]
+        masks = self.res["masks"]
+        signals = self.res["signals"]
+        fig = plot_cell_and_spots(
+            rois[w], masks[w], signals[w],
+            colors={
+                "ch1": "hotpink",
+                "ch2": "lime",
+                "ch1+ch2": "yellow",
+            },
+            number=w+1)
+        base64_str = fig_to_base64(fig)
+        return base64_str
 
     async def analysis(self, img, mask, signal_channels=[0, 1]):
         uf = await self.get_ufish_client()
