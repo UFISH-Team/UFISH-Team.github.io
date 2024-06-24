@@ -34,7 +34,8 @@ from skimage.segmentation import watershed
 import numpy as np
 import random
 import matplotlib
-matplotlib.use("module://matplotlib_pyodide.wasm_backend")
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 def extract_cells(
@@ -317,7 +318,6 @@ async def get_signal_masks(
 
 
 def plot_on_img(img, props):
-    import matplotlib.pyplot as plt
     scale = 0.01
     figsize = (img.shape[1] * scale, img.shape[0] * scale)
     fig, ax = plt.subplots(figsize=figsize)
@@ -338,6 +338,15 @@ def fig_to_base64(fig):
     fig.savefig(buf, format='png')
     buf.seek(0)
     return base64.b64encode(buf.read()).decode('utf-8')
+
+
+def fig_to_array(fig):
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    res = np.array(plt.imread(buf))
+    res = res[::-1, :, :3]
+    return res
 
 
 def filter_cell_by_prop(
@@ -486,8 +495,8 @@ class Plugin():
             rois, masks, signals,
             colors={"ch1": "hotpink", "ch2": "lime", "ch1+ch2": "yellow"},
             max_plots=max_plots)
-        base64_str = fig_to_base64(fig)
-        return base64_str
+        fig_arr = fig_to_array(fig)
+        return fig_arr
 
     async def draw_single_result(self, idx):
         if self.res is None:
@@ -504,8 +513,8 @@ class Plugin():
                 "ch1+ch2": "yellow",
             },
             number=w+1)
-        base64_str = fig_to_base64(fig)
-        return base64_str
+        fig_arr = fig_to_array(fig)
+        return fig_arr
 
     async def analysis(self, img, mask, signal_channels=[0, 1]):
         uf = await self.get_ufish_client()

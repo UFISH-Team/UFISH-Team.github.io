@@ -350,6 +350,7 @@ class ImJoyPlugin {
         const signal_channels = eval(config.signal_channels)
         console.log("Signal channels:", signal_channels)
         const analysis_summary = await dna_utils.analysis(img, mask, signal_channels)
+        await client.setInputImage(img)
         return analysis_summary
       },
     })
@@ -374,13 +375,15 @@ class ImJoyPlugin {
       },
       execute: async (config) => {
         const dna_utils = await this.getDnaUtils()
-        debugger
-        const base64 = await dna_utils.draw_sample_results(config.max_plots)
-        if (!base64) {
-          return "No results to show, you need to run DNA-FISH analysis first."
-        }
-        // markdown base64 image
-        return `![DNA-FISH analysis result](data:image/png;base64,${base64})`
+        const arr = await dna_utils.draw_sample_results(config.max_plots)
+        const kaibu = await api.getWindow("Kaibu")
+        kaibu.view_image(
+          arr,
+          {
+            name: "DNA-FISH analysis",
+          }
+        )
+        return "Done"
       }
     })    
 

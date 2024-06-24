@@ -21,7 +21,6 @@
 </config>
 
 <script lang="python">
-from imjoy_rpc.hypha import connect_to_server
 from imjoy import api
 from skimage.measure import find_contours, approximate_polygon, regionprops
 from skimage.draw import polygon2mask
@@ -29,6 +28,7 @@ from skimage.draw import polygon2mask
 SERVER_URL = "https://ai.imjoy.io"
 
 async def run_model(model_id, input_image, kwargs, server_url=SERVER_URL):
+    from imjoy_rpc.hypha import connect_to_server
     server = await connect_to_server(
         {"server_url": server_url}
     )
