@@ -28,6 +28,7 @@ const chatbot_url = "https://bioimage.io/chat/"
 const ufish_url = "http://localhost:5173/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const dna_utils_url = ufish_url + "/plugins/dna-ufish-utils.imjoy.html"
+const displayer_url = ufish_url + "/plugins/img-display.imjoy.html"
 const py_console_url = "https://nanguage.github.io/web-python-console/"
 
 class ImJoyPlugin {
@@ -49,6 +50,7 @@ class ImJoyPlugin {
     }
     await this.getUfishClient()
     await this.getChatbotUtils()
+    await this.getDnaUtils()
     this.annotation_layer = null
     this.ufish_spots = null
   }
@@ -76,6 +78,16 @@ class ImJoyPlugin {
     return plugin
   }
 
+  async getDnaUtils() {
+    let plugin;
+    try {
+      plugin = await api.getPlugin("dna-ufish-utils")
+    } catch (e) {
+      plugin = await api.loadPlugin({src: dna_utils_url, name: "dna-ufish-utils"})
+    }
+    return plugin
+  }
+
   async getPythonConsole() {
     let plugin = await api.getWindow("web-python-console");
     if (!plugin) {
@@ -87,8 +99,8 @@ class ImJoyPlugin {
     }
     return plugin
   }
-
-  async drawContours() {
+    
+  async drawContours(reverseY=false, yLength=0) {
     const utils = await this.getChatbotUtils()
     await utils.compute_mask_coutours()
     const coutours = await utils.get_coutours()
@@ -97,6 +109,11 @@ class ImJoyPlugin {
     this.annotation_layer = annotation_layer
     for (let i = 0; i < coutours.length; i++) {
       const coords = coutours[i]
+      if (reverseY) {
+        for (let j = 0; j < coords.length; j++) {
+          coords[j][1] = yLength - coords[j][1]
+        }
+      }
       const polygon = {
         type: "Feature",
         coordinates: [coords],
@@ -114,98 +131,7 @@ class ImJoyPlugin {
       annotation_layer.add_feature(polygon)
     }
   }
-    
   async registerExtensions(register) {
-    // Extension allow chatbot run U-FISH web client
-    await register({
-      _rintf: true,
-      name: "runUfish",
-      description: "The extension allow chatbot run U-FISH web client",
-      get_schema: async () => {
-        return {
-          type: "object",
-          title: "RunUfish",
-          description: "Run U-FISH web client to detect spots in the image",
-          properties: {
-            "channel": {
-              type: "number | null",
-              description: "Channel to use",
-              default: null,
-            },
-            "pThreshold": {
-              type: "number",
-              description: "Threshold for spot detection",
-              default: 0.5,
-            },
-            "viewEnhanced": {
-              type: "boolean",
-              description: "View enhanced image",
-              default: false,
-            },
-          }
-        }
-      },
-      execute: async (config) => {
-        const client = await this.getUfishClient()
-        await client.waitReady();
-        await client.runPredict(config.channel, config.pThreshold, false, config.viewEnhanced);
-        const output = await client.getOutput();
-        this.ufish_spots = output.spots
-        return "Done"
-      },
-    })
-
-    // Extension allow chatbot run cellpose model
-    await register({
-      _rintf: true,
-      name: "runCellpose",
-      description: "The extension allow chatbot run cellpose model",
-      get_schema: async () => {
-        return {
-          type: "object",
-          title: "RunCellpose",
-          description: "Run cellpose model",
-          properties: {
-            "diameter": {
-              type: "number",
-              description: "Diameter of the cells",
-              default: 50,
-            },
-            "model_type": {
-              type: "string",
-              description: "Model type, nuclei or cyto",
-              default: "nuclei",
-            },
-            "flow_threshold": {
-              type: "number",
-              description: "Flow threshold",
-              default: 0.4,
-            },
-            "channel": {
-              type: "number",
-              description: "Channel to use",
-              default: 2,
-            }
-          },
-        };
-      },
-      execute: async (config) => {
-        const client = await this.getUfishClient()
-        const utils = await this.getChatbotUtils()
-        const img = await client.getInputImage()
-        await utils.run_cellpose(
-          img,
-          config.channel,
-          {
-            diameter: config.diameter,
-            model_type: config.model_type,
-            flow_threshold: config.flow_threshold,
-          }
-        )
-        await this.drawContours()
-        return "Done"
-      },
-    })
 
     const pycodeDescription = `
     The extension allow chatbot execute Python code in Pyodide environment.
@@ -256,55 +182,140 @@ class ImJoyPlugin {
       },
     }))
 
-    // Extension allow count spots in cells
     await register({
       _rintf: true,
-      name: "countSpotsInCells",
-      description: "The extension allow chatbot count spots in cells",
+      name: "analysisDnaFish",
+      description: "Analysis DNA-FISH data using U-FISH.",
       get_schema: async () => {
         return {
           type: "object",
-          title: "countSpotsInCells",
-          description: "Count spots in cells",
+          title: "analysisDnaFish",
+          description: "Analysis DNA-FISH data using U-FISH.",
           properties: {
-            "use_selected": {
-              type: "boolean",
-              description: "Use selected cells",
-              default: false,
+            "cell_diameter": {
+              type: "number",
+              description: "Diameter of the cells",
+              default: 40,
             },
-          },
-        };
+            "signal_channels": {
+              type: "string",
+              description: "Signal channels, if it is a quantity probe like detecting the probe of three bodies, only one channel needs to be input, like [0]. However, fusion probes and separation probes require inputting two channels.",
+              default: "[0, 1]",
+            },
+            "max_cells": {
+              type: "number",
+              description: "Max number of cells to analyze",
+              default: 50,
+            },
+          }
+        }
       },
       execute: async (config) => {
-        const spots = this.ufish_spots
-        if (!spots) {
-          return "Please run U-FISH first"
-        }
-        const anno_layer = this.annotation_layer
-        if (!anno_layer) {
-          return "Please run cellpose first"
-        }
+        const client = await this.getUfishClient()
+        const dna_utils = await this.getDnaUtils()
         const utils = await this.getChatbotUtils()
+        const img = await client.getInputImage()
+        await utils.run_cellpose(
+          img,
+          2,
+          {
+            diameter: config.cell_diameter,
+            model_type: "nuclei",
+            flow_threshold: 0.4,
+          }
+        )
+        await this.drawContours()
+        const mask = await utils.get_mask()
+        const signal_channels = eval(config.signal_channels)
+        console.log("Signal channels:", signal_channels)
+        const max_cells = config.max_cells
+        const analysis_summary = await dna_utils.analysis(img, mask, signal_channels, max_cells)
+        await client.setInputImage(img)
+        return analysis_summary
+      },
+    })
+
+    await register({
+      _rintf: true,
+      name: "drawDnaFishExamples",
+      description: "Draw results of DNA-FISH analysis.",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "drawDnaFishExamples",
+          description: "Draw results of DNA-FISH analysis.",
+          properties: {
+            "max_plots": {
+              type: "number",
+              description: "Max number of cells to plot",
+              default: 50,
+            },
+          }
+        }
+      },
+      execute: async (config) => {
         const client = await this.getUfishClient()
         const img = await client.getInputImage()
-        if (!img) {
-          return "Please open an image first"
+        const dna_utils = await this.getDnaUtils()
+        const arr_img = await dna_utils.draw_on_img(img)
+        const kaibu = await api.getWindow("Kaibu")
+        await kaibu.view_image(arr_img, {name: "input with cell label"})
+        await this.drawContours(true, img._rshape[0])
+        let b64_samples = await dna_utils.draw_sample_results(config.max_plots)
+        let displayer_samples = await api.createWindow(displayer_url, {name: "Sample results"})
+        displayer_samples.display(b64_samples)
+        return "Done"
+      }
+    })
+
+    await register({
+      _rintf: true,
+      name: "countCellRatio",
+      description: "Count cell ratio, which have specific signals.",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "countCellRatio",
+          description: "Count cell ratio, which have specific signals.",
+          properties: {
+            "condition": {
+              type: "string",
+              description: "Condition to count, e.g., table['ch0+ch1']>2",
+              default: "table['ch0+ch1']>2",
+            }
+          }
         }
-        const img_shape = img._rshape
-        let cell_features;
-        if (config.use_selected) {
-          cell_features = await anno_layer.get_selected_features()
-        } else {
-          cell_features = await anno_layer.get_features()
-        }
-        const spots_in_cells = await utils.count_spots_in_cells(
-          spots, img_shape, cell_features)
-        return "Number of spots in cells: " + spots_in_cells
       },
+      execute: async (config) => {
+        const dna_utils = await this.getDnaUtils()
+        const ratio = await dna_utils.count_cell_ratio(config.condition)
+        return ratio
+      }
+    })
+
+    await register({
+      _rintf: true,
+      name: "getMeanSignalCounts",
+      description: "Get mean signal counts of each channel in each cell.",
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "getMeanSignalCounts",
+          description: "Get mean signal counts of each channel in each cell.",
+          properties: {
+          }
+        }
+      },
+      execute: async (config) => {
+        const dna_utils = await this.getDnaUtils()
+        const mean_counts = await dna_utils.count_mean_signals()
+        return mean_counts
+      }
     })
 
     api.log('initialized')
   }
+
   async run(ctx) { }
 }
 

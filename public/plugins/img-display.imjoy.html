@@ -1,0 +1,53 @@
+<docs lang="markdown">
+[TODO: write documentation for this plugin.]
+</docs>
+
+<config lang="json">
+{
+  "name": "imgDisplay",
+  "type": "window",
+  "tags": [],
+  "ui": "",
+  "version": "0.1.0",
+  "cover": "",
+  "description": "Display image",
+  "icon": "extension",
+  "inputs": null,
+  "outputs": null,
+  "api_version": "0.1.8",
+  "env": "",
+  "permissions": [],
+  "requirements": [],
+  "dependencies": [],
+  "defaults": {"w": 20, "h": 10}
+}
+</config>
+
+<script lang="javascript">
+class ImJoyPlugin {
+  async setup() {
+    api.log('initialized')
+  }
+
+  async display(base64) {
+    const container = document.getElementById('container')
+    const img = document.createElement('img')
+    img.src = 'data:image/png;base64,' + base64
+    container.appendChild(img)
+  }
+
+  async run(ctx) {
+  }
+}
+
+api.export(new ImJoyPlugin())
+</script>
+
+<window lang="html">
+  <div id="container">
+  </div>
+</window>
+
+<style lang="css">
+
+</style>
