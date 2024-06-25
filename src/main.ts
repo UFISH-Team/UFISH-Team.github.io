@@ -40,7 +40,7 @@ async function createApi() {
     await runStore.waitRunable()
   }
 
-  async function run(channel=null, pThreshold=0.5, headless=False, viewEnhanced=true) {
+  async function run(channel=null, pThreshold=0.5, headless=false, viewEnhanced=true) {
     const runStore = useRunStore()
     runStore.setParams(channel, pThreshold, headless, viewEnhanced)
     await runStore.run()
