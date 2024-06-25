@@ -10,7 +10,7 @@ Online instance: [ufish-web](https://ufish-team.github.io/#/)
 Usage example:
 
 ```Python
-ufish = await api.createWindow("http://localhost:5173/")
+ufish = await api.createWindow("https://ufish-team.github.io/")
 img = await ufish.fetchImage("https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif")
 out = await ufish.predict(img)  # predict the spots
 print(out.enhanced.shape)

@@ -24,8 +24,8 @@
 
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
-//const ufish_url = "https://ufish-team.github.io/"
-const ufish_url = "http://localhost:5173/"
+const ufish_url = "https://ufish-team.github.io/"
+//const ufish_url = "http://localhost:5173/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const dna_utils_url = ufish_url + "/plugins/dna-ufish-utils.imjoy.html"
 const py_console_url = "https://nanguage.github.io/web-python-console/"
@@ -88,7 +88,7 @@ class ImJoyPlugin {
     return plugin
   }
 
-  async drawContours() {
+  async drawContours(reverseY=true, yLength=0) {
     const utils = await this.getChatbotUtils()
     await utils.compute_mask_coutours()
     const coutours = await utils.get_coutours()
@@ -97,6 +97,11 @@ class ImJoyPlugin {
     this.annotation_layer = annotation_layer
     for (let i = 0; i < coutours.length; i++) {
       const coords = coutours[i]
+      if (reverseY) {
+        for (let j = 0; j < coords.length; j++) {
+          coords[j][1] = yLength - coords[j][1]
+        }
+      }
       const polygon = {
         type: "Feature",
         coordinates: [coords],
@@ -202,7 +207,7 @@ class ImJoyPlugin {
             flow_threshold: config.flow_threshold,
           }
         )
-        await this.drawContours()
+        await this.drawContours(true, img._rshape[0])
         return "Done"
       },
     })

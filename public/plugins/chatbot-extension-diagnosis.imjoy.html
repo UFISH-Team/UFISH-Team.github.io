@@ -24,8 +24,8 @@
 
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
-//const ufish_url = "https://ufish-team.github.io/"
-const ufish_url = "http://localhost:5173/"
+const ufish_url = "https://ufish-team.github.io/"
+//const ufish_url = "http://localhost:5173/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const dna_utils_url = ufish_url + "/plugins/dna-ufish-utils.imjoy.html"
 const displayer_url = ufish_url + "/plugins/img-display.imjoy.html"
@@ -100,7 +100,7 @@ class ImJoyPlugin {
     return plugin
   }
     
-  async drawContours(reverseY=false, yLength=0) {
+  async drawContours(reverseY=true, yLength=0) {
     const utils = await this.getChatbotUtils()
     await utils.compute_mask_coutours()
     const coutours = await utils.get_coutours()
@@ -131,6 +131,7 @@ class ImJoyPlugin {
       annotation_layer.add_feature(polygon)
     }
   }
+
   async registerExtensions(register) {
 
     const pycodeDescription = `
@@ -224,7 +225,7 @@ class ImJoyPlugin {
             flow_threshold: 0.4,
           }
         )
-        await this.drawContours()
+        await this.drawContours(true, img._rshape[0])
         const mask = await utils.get_mask()
         const signal_channels = eval(config.signal_channels)
         console.log("Signal channels:", signal_channels)

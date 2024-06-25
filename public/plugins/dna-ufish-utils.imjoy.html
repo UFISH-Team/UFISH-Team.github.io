@@ -466,7 +466,8 @@ async def pipeline(ufish_instance, img, mask, signal_channels=[0, 1], max_cells=
     return pd.DataFrame(table).fillna(0), new_cell_rois, new_cell_masks, cell_signals, new_cell_props
 
 
-ufish_url = "http://localhost:5173/"
+ufish_url = "https://ufish-team.github.io/"
+#ufish_url = "http://localhost:5173/"
 
 class Plugin():
     async def setup(self):

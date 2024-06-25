@@ -153,27 +153,32 @@ class Plugin():
             tif.save(image)
         return _file.getvalue()
 
-    async def view_img_from_bytes(self, file_name, bytes_):
+    async def view_img_from_bytes(self, file_name, bytes_, set_img=True):
         image = await self.load_image_from_bytes(file_name, bytes_)
-        self.image = image
-        await self.viewer.view_image(image, name=file_name)
+        await self.view_img(image, name=file_name, set_img=set_img)
         return image.shape
 
-    async def view_img(self, image, name):
-        self.image = image
-        await self.viewer.view_image(image, name=name)
+    async def view_img(self, image, name, set_img=True):
+        if set_img:
+            self.image = image
+        await self.viewer.view_image(image[::-1, ...], name=name)
         return image.shape
+
+    async def view_points(self, coords, img_shape, name):
+        _coords = np.copy(coords)
+        _coords[:, 0] = (img_shape[0] - _coords[:, 0]) -1
+        _coords = _coords[:, ::-1]
+        await self.viewer.add_points(_coords, name="spots")
 
     async def process_enhanced(self, enh_img, headless=False, view_enhanced=True, pThreshold=0.5):
         if (not headless) and view_enhanced:
-            await self.viewer.view_image(enh_img, name="enhanced")
+            await self.view_img(enh_img, name="enhanced", set_img=False)
         df = call_spots_local_maxima(enh_img, p_threshold=pThreshold)
         coords = df.values
         self.enhanced_image = enh_img
         self.spots = coords
         if not headless:
-            await self.viewer.add_points(
-                np.flip(coords, axis=1), name="spots")
+            await self.view_points(coords, enh_img.shape, "spots")
         enh_bytes = await self.save_image_to_bytes(enh_img)
         fake_csv_file = io.StringIO()
         coords_csv = df.to_csv(fake_csv_file, index=False)

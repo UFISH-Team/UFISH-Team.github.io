@@ -51,7 +51,8 @@ export const useRunStore = defineStore("run", {
     viewEnhanced: true,
     headless: false,
     exampleImageUrl: "https://huggingface.co/datasets/NaNg/TestData/resolve/main/FISH_spots/MERFISH_1.tif",
-    onnxModelUrl: "http://localhost:5173/model/v1.0-alldata-ufish_c32.onnx",
+    onnxModelUrl: "https://ufish-team.github.io/model/v1.0-alldata-ufish_c32.onnx",
+    //onnxModelUrl: "http://localhost:5173/model/v1.0-alldata-ufish_c32.onnx",
   }),
   actions: {
     async waitRunable() {
