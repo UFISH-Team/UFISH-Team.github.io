@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>ImJoy WinBox</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport"
+    content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta property="og:url" content="https://imjoy.io" />
+  <meta property="og:title" content="ImJoy" />
+  <meta property="og:description" content="ImJoy -- Deep Learning Made Easy!" />
+  <meta property="og:image" content="https://imjoy.io/static/img/imjoy-card-plain.png" />
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="/favicon.svg"  />
+  <script src="https://lib.imjoy.io/imjoy-loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/imjoy-rpc@latest/dist/hypha-rpc-websocket.min.js"></script>
+  <script src="https://rawcdn.githack.com/nextapps-de/winbox/0.2.82/dist/winbox.bundle.min.js"></script>
+</head>
+
+<body style="width:100%;height:100vh;">
+  <div id="menu-container" style="position: absolute; right: 0; top: 4px; z-index: 999"></div>
+  <div id="window-container" style="height: 100vh"></div>
+  <script>
+  loadImJoyCore().then((imjoyCore)=>{
+    const imjoy = new imjoyCore.ImJoy({
+        imjoy_api: {},
+        //imjoy config
+    })
+    imjoy.start({workspace: 'default'}).then(()=>{
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has("plugin")) {
+        const pluginUrl = urlParams.get("plugin")
+        const plugin_fut = imjoy.api.loadPlugin({src: pluginUrl})
+        plugin_fut.then(plugin=>{
+          plugin.run()
+          console.log('new plugin:', plugin)
+        })
+      }
+    })
+    imjoy.event_bus.on("add_window", w=>{
+      const wb = new WinBox(w.name)
+      wb.body.id = w.window_id
+    })
+  })
+
+  </script>
+  <style>
+    #menu-container {
+      opacity: 0.4;
+    }
+
+    #menu-container:hover {
+      opacity: 1.0;
+    }
+
+    .window{
+      min-height: 200px;
+    }
+  </style>
+</body>
+
+</html>

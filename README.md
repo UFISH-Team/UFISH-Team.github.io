@@ -29,6 +29,8 @@ CLick to run it using: [web-python-console](https://nanguage.github.io/web-pytho
 | `getOutput` | | Get the output of the model. It's an object contain `enhanced: np.ndarray` and `spots: np.ndarray` fields |
 | `runPredict` | | Run the prediction. |
 | `fetchImage` | `url: string` | Fetch an image from the given url, return a numpy array |
+| `setOnnxModelUrl` | `url: string` | Set the ONNX model url. |
+| `getInputImage` | | Get the input image. |
 
 ## Development
 
