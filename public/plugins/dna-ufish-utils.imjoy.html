@@ -237,8 +237,9 @@ def plot_all_rois(rois, masks, signals, colors, max_plots=50):
     masks = [masks[i] for i in selected_index]
     signals = [signals[i] for i in selected_index]
     num_plots = len(rois)
-    rows = int(np.ceil(num_plots / 5))
-    cols = min(3, num_plots)
+    cols_per_row = 3
+    rows = int(np.ceil(num_plots / cols_per_row))
+    cols = min(cols_per_row, num_plots)
     unit = 1.6
     fig, axs = plt.subplots(
         rows, cols,
@@ -482,7 +483,6 @@ class Plugin():
             name: "ufish",
             w: 25, h: 6
           })
-        await client.setExampleImageUrl(ufish_url + "images/trisomy_example.jpg")
         await client.setOnnxModelUrl(ufish_url + "model/v1.0.1-DNAFISH_model.onnx")
         await client.waitReady()
         return client
@@ -546,18 +546,23 @@ class Plugin():
         return self.result_summary()
 
     async def count_cell_ratio(self, condition_str):
+        num1 = await self.count_cell_number(condition_str)
+        total = await self.count_cell_number("")
+        ratio = num1 / total
+        return f"{num1}/{total}={ratio:.2f}"
+
+    async def count_cell_number(self, condition_str):
         if self.res is None:
-            return None
+            raise ValueError("No results found.")
         table = self.res["table"]
-        cell_num = table.shape[0]
-        if cell_num == 0:
-            return None
-        try:
+        if len(table) == 0:
+            raise ValueError("No cells found.")
+        if condition_str == "":
+            return table.shape[0]
+        else:
             condition = eval(condition_str)
-            ratio = table[condition].shape[0] / cell_num
-        except Exception as e:
-            return str(e)
-        return ratio
+            cell_num = table[condition].shape[0]
+        return cell_num
 
     async def count_mean_signals(self):
         if self.res is None:

@@ -25,7 +25,7 @@
 <script lang="javascript">
 const chatbot_url = "https://bioimage.io/chat/"
 const ufish_url = "https://ufish-team.github.io/"
-//const ufish_url = "http://localhost:5173/"
+//const ufish_url = "http://localhost:5174/"
 const utils_url = ufish_url + "/plugins/chatbot-utils.imjoy.html"
 const dna_utils_url = ufish_url + "/plugins/dna-ufish-utils.imjoy.html"
 const displayer_url = ufish_url + "/plugins/img-display.imjoy.html"
@@ -64,7 +64,7 @@ class ImJoyPlugin {
         w: 25, h: 6
       });
     }
-    client.setExampleImageUrl(ufish_url + "images/test_fish_img2.jpg")
+    await client.setExampleImageUrl(ufish_url + "images/trisomy_example.png")
     return client
   }
 
@@ -281,8 +281,8 @@ class ImJoyPlugin {
           properties: {
             "condition": {
               type: "string",
-              description: "Condition to count, e.g., table['ch0+ch1']>2",
-              default: "table['ch0+ch1']>2",
+              description: "Condition to count, e.g., table['ch0+ch1']>=2. ch0,ch1,ch2 are RGB channels. 'ch0+ch1' means the yellow channel signals.",
+              default: "table['ch0+ch1']>=2",
             }
           }
         }
@@ -311,6 +311,49 @@ class ImJoyPlugin {
         const dna_utils = await this.getDnaUtils()
         const mean_counts = await dna_utils.count_mean_signals()
         return mean_counts
+      }
+    })
+
+    const diagnosisPrompt = `
+      Diagnosis disease using DNA-FISH data.
+      Need to run the analysisDnaFish first, then run this extension.
+      Common DNA-FISH probe and disease examples:
+        - Trisomy probe: 3 signals in one cell
+          + Example disease: Myelodysplastic syndrome (MDS)
+          + Abnormal cell: red signal >= 3
+          + Criteria: abnormal ratio >= 0.05
+        - Fusion probe: 2 fusions in one cell
+          + Example disease: PML-RARA acute leukemia
+          + Abnormal cell: yellow signal >= 2 
+          + Criteria: abnormal ratio >= 0.05
+        - Separation probe: 1 fusion and 1 separation in one cell
+          + Example disease: KMT2A gene acute leukemia
+          + Abnormal cell: yellow signal == 1, red signal == 1, green signal == 1
+          + Criteria: abnormal ratio >= 0.05
+    `
+
+    await register({
+      _rintf: true,
+      name: "DnaFishDiseaseDiagnosis",
+      description: diagnosisPrompt,
+      get_schema: async () => {
+        return {
+          type: "object",
+          title: "DnaFishDiseaseDiagnosis",
+          description: diagnosisPrompt,
+          properties: {
+            "countCondition": {
+              type: "string",
+              description: "Condition to count, e.g., table['ch0+ch1']>=2. ch0,ch1,ch2 are RGB channels. 'ch0+ch1' means the yellow channel signals.",
+              default: "table['ch0+ch1']>=2",
+            }
+          }
+        }
+      },
+      execute: async (config) => {
+        const dna_utils = await this.getDnaUtils()
+        const ratio = await dna_utils.count_cell_ratio(config.countCondition)
+        return ratio
       }
     })
 
