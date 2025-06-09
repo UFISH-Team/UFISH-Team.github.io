@@ -150,7 +150,7 @@ class Plugin():
     async def save_image_to_bytes(self, image):
         _file = io.BytesIO()
         with tifffile.TiffWriter(_file) as tif:
-            tif.save(image)
+            tif.write(image)
         return _file.getvalue()
 
     async def view_img_from_bytes(self, file_name, bytes_, set_img=True):
